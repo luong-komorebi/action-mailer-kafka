@@ -21,8 +21,7 @@ module Eh
       def deliver!(mail)
         mail_data = mail.to_json
         if @params[:kafka_publish_method]
-          package_data = { message: mail_data, topic: MAILER_TOPIC_NAME }
-          kafka_client.send(@params[:kafka_publish_method], package_data)
+          kafka_client.send(@params[:kafka_publish_method], mail_data: mail_data, topic: topic)
         else
           kafka_client._publish_message(mail_data, MAILER_TOPIC_NAME)
         end
