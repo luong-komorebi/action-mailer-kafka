@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "ruby-kafka", "~> 0.7.6"
   spec.add_dependency "mail"
-  spec.add_development_dependency "bundler", "~> 2.0"
+  spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency 'rspec-json_expectations'
   spec.add_development_dependency "rspec", "~> 3.0"
