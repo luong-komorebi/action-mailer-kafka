@@ -5,7 +5,7 @@ module Eh
       attr_accessor :message
 
       def kafka_client
-        @kafka_client ||= KafkaWorker.new @params[:kafka_client]
+        @kafka_client ||= KafkaWorker.new @params[:kafka_client_producer]
       end
 
       def initialize(**params)
@@ -14,21 +14,13 @@ module Eh
 
       def deliver!(mail)
         mail_data = construct_mail_data mail
-        if @params[:kafka_publish_method]
-          kafka_client.send \
-            @params[:kafka_publish_method],
-            mail_data: mail_data,
-            topic: MAILER_TOPIC_NAME
-        else
-          kafka_client._publish_message(mail_data, MAILER_TOPIC_NAME)
-        end
+        kafka_client.publish_message(mail_data, MAILER_TOPIC_NAME)
       end
 
       private
 
       def construct_mail_data(mail)
         general_data = {
-          header: mail.headers,
           subject: mail.subject,
           from: mail.from,
           to: mail.to,
@@ -37,8 +29,17 @@ module Eh
           mime_type: mail.mime_type
         }
         general_data.merge! construct_mail_body(mail)
+        general_data.merge!construct_mail_header(mail)
         general_data[:attachments] = construct_attachments mail
         general_data.to_json
+      end
+
+      def construct_mail_header(mail)
+        if mail['headers']
+          { header: mail['headers'].unparsed_value }
+        else
+          { header: {} }
+        end
       end
 
       def construct_attachments(mail)

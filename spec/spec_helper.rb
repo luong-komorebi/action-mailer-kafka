@@ -1,5 +1,6 @@
 require "bundler/setup"
 require "eh/mailer"
+require "rspec/json_expectations"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -11,6 +12,5 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
-
   config.expose_dsl_globally = true
 end

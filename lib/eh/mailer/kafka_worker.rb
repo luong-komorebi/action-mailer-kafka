@@ -32,7 +32,7 @@ module Eh
         info
       end
 
-      def _publish_message(data, topic)
+      def publish_message(data, topic)
         @kafka_producer.produce(data, topic: topic)
         @kafka_producer.deliver_messages
       end
