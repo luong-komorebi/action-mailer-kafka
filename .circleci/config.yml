@@ -4,18 +4,22 @@
 #
 version: 2
 jobs:
-  build:
+  rubocop:
     docker:
-      # specify the version you desire here
       - image: circleci/ruby:2.4.1
+        environment:
+          LOG_LEVEL: DEBUG
+    steps:
+      - checkout
+      - run: bundle install --path vendor/bundle
+      - run: bundle exec rubocop
 
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
+  unit:
+    docker:
+      - image: circleci/ruby:2.4.1
+        environment:
+          LOG_LEVEL: DEBUG
     working_directory: ~/repo
-
     steps:
       - checkout
 
@@ -55,3 +59,87 @@ jobs:
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
+
+  publish-github-release:
+    working_directory: ~/app
+    docker:
+      - image: ehdevops/release_lib:0.0.1
+        environment:
+          GITHUB_REPOSITORY: 'Thinkei/eh-mailer'
+    steps:
+      - checkout
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            VERSION=$(echo `cat ~/app/app.json` | jq .version | tr -d \")
+            RELEASE_NOTE=$(node /usr/src/app/release_note.js -f ~/app/CHANGELOG.md -v $VERSION)
+            echo "${RELEASE_NOTE}" > /release/release_note.txt
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n ${VERSION} -b "${RELEASE_NOTE}" -delete ${VERSION} /release/
+
+  publish:
+    docker:
+      - image: ehdevops/ruby240:latest
+    steps:
+      - checkout
+      - run: bundle check || bundle install --path=vendor/bundle --jobs=4 --retry=3
+      - run:
+          name: Deploy to gemfury
+          command: |
+            bundle exec ruby scripts/publish.rb
+
+  publish_development:
+    docker:
+      - image: ehdevops/ruby240:latest
+    steps:
+      - checkout
+      - run: bundle check || bundle install --path=vendor/bundle --jobs=4 --retry=3
+      - run:
+          name: Deploy to gemfury
+          command: |
+            bundle exec ruby scripts/publish_development.rb
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - unit:
+          context: org-global
+      - rubocop:
+          context: org-global
+      - publish_new_version:
+          type: approval
+          filters:
+            branches:
+              only:
+                - master
+      - publish_development:
+          context: org-global
+          filters:
+            branches:
+              only:
+                - development
+          requires:
+            - unit
+            - rubocop
+      - publish_github_release:
+          context: org-global
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - unit
+            - rubocop
+            - publish_new_version
+      - publish:
+          context: org-global
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - rubocop
+            - unit
+            - publish_new_version
+            - publish_github_release
+
