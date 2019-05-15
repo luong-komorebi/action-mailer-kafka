@@ -4,7 +4,6 @@ module Eh
       attr_reader :producer
 
       def initialize(kafka_producer = nil)
-        puts 'Setup Kafa'
         @kafka_producer = kafka_producer || ::Kafka.new(kafka_client_info).producer
       end
 
