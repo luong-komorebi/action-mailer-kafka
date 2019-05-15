@@ -5,6 +5,7 @@ AllCops:
     - 'Rakefile'
     - 'scripts/**/*'
     - 'bin/*'
+    - 'example/**/*'
 
 Style/Documentation:
   Enabled: no
