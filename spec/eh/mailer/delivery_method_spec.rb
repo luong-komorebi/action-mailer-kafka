@@ -16,14 +16,12 @@ describe Eh::Mailer::DeliveryMethod do
   end
 
   let(:mail) do
-    Mail.new(
-      to: 'test@luong.com',
+    Mail.new \
       from: 'luong@handsome.rich',
       subject: 'Hello, world!',
       bcc: 'luong@overpower.invincible',
       cc: 'luong@checkmate.com',
       to: 'luong@lord.lol'
-    )
   end
   let(:topic) { Eh::Mailer::DeliveryMethod::MAILER_TOPIC_NAME }
   let(:fake_kafka_producer) { FakeKafkaProducer.new }
@@ -98,7 +96,7 @@ describe Eh::Mailer::DeliveryMethod do
 
   context 'email contains headers' do
     before do
-      mail['headers'] = {'X-Luong' => 'dog'}
+      mail['headers'] = { 'X-Luong' => 'dog' }
     end
 
     it 'deliver message to Kafka' do

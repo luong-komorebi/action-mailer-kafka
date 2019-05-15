@@ -29,7 +29,7 @@ module Eh
           mime_type: mail.mime_type
         }
         general_data.merge! construct_mail_body(mail)
-        general_data.merge!construct_mail_header(mail)
+        general_data.merge! construct_mail_header(mail)
         general_data[:attachments] = construct_attachments mail
         general_data.to_json
       end
