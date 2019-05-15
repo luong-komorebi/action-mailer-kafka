@@ -1,10 +1,13 @@
+require 'json'
+
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'eh/mailer/version'
 
+manifest_path = File.expand_path('app.json', __dir__)
 Gem::Specification.new do |spec|
   spec.name = 'eh-mailer'
-  spec.version = Eh::Mailer::VERSION
+  spec.version = JSON.parse(File.read(manifest_path))['version']
+
   spec.authors = ['Luong Vo']
   spec.email = ['vo.tran.thanh.luong@gmail.com']
 
