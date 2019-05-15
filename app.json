@@ -1,0 +1,12 @@
+{
+  "name": "eh-mailer",
+  "version": "0.1.0",
+  "documents": [
+    {
+      "name": "README",
+      "source": "README.md",
+      "format": "markdown",
+      "description": "Custom transportation layer for actionmailer"
+    }
+  ]
+}
