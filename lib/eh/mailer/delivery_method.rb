@@ -55,10 +55,10 @@ module Eh
       end
 
       def construct_mail_body(mail)
-        if mail.mime_type == 'multipart/alternative'
+        if ['multipart/alternative', 'multipart/mixed', 'multipart/related'].include?(mail.mime_type)
           {
-            text_part: mail.text_part.decoded,
-            html_part: mail.html_part.decoded
+            text_part: mail.text_part&.decoded,
+            html_part: mail.html_part&.decoded
           }
         else
           { body: mail.body.decoded }
