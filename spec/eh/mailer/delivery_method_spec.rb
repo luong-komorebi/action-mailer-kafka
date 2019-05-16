@@ -51,6 +51,35 @@ describe Eh::Mailer::DeliveryMethod do
     end
   end
 
+  context 'when there is an error' do
+    before do
+      mail.content_type = 'text/plain'
+    end
+
+    context 'raise on delivery option is set' do
+      let(:mailer) do
+        described_class.new(kafka_client_producer: fake_kafka_producer)
+      end
+
+      it 'log the error and raise exception' do
+        expect_any_instance_of(Mail::Message).to receive(:subject).and_raise(StandardError, 'some error')
+        expect_any_instance_of(Logger).to receive(:error)
+        mailer.deliver!(mail)
+      end
+    end
+
+    context 'raise on delivery option is not set' do
+      let(:mailer) do
+        described_class.new(kafka_client_producer: fake_kafka_producer, raise_on_delivery_error: true)
+      end
+
+      it 'log the error and raise exception' do
+        expect_any_instance_of(Mail::Message).to receive(:subject).and_raise(StandardError, 'some error')
+        expect { mailer.deliver!(mail) }.to raise_error(StandardError, 'some error')
+      end
+    end
+  end
+
   context 'email is html' do
     before do
       mail.content_type = 'text/html'

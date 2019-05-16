@@ -2,19 +2,27 @@ module Eh
   module Mailer
     class DeliveryMethod
       MAILER_TOPIC_NAME = 'EmploymentHero.Emails'.freeze
-      attr_accessor :message
+      attr_accessor :message, :settings
 
       def kafka_client
-        @kafka_client ||= KafkaWorker.new @params[:kafka_client_producer]
+        @kafka_client ||= KafkaWorker.new @settings[:kafka_client_producer]
+      end
+
+      def logger
+        @settings[:logger] || Logger.new(STDOUT)
       end
 
       def initialize(**params)
-        @params = params
+        @settings = params
       end
 
       def deliver!(mail)
         mail_data = construct_mail_data mail
         kafka_client.publish_message(mail_data, MAILER_TOPIC_NAME)
+      rescue StandardError => e
+        raise if @settings[:raise_on_delivery_error]
+
+        logger.error("Fail to send email due to: #{e.message}")
       end
 
       private
@@ -61,7 +69,7 @@ module Eh
             html_part: mail.html_part&.decoded
           }
         else
-          { body: mail.body.decoded }
+          { body: mail.body&.decoded }
         end
       end
     end
