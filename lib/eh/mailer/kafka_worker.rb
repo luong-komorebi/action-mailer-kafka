@@ -3,8 +3,11 @@ module Eh
     class KafkaWorker
       attr_reader :producer
 
-      def initialize(kafka_producer = nil)
-        @kafka_producer = kafka_producer || ::Kafka.new(kafka_client_info).producer
+      def initialize(kafka_producer: nil, kafka_publish_method: nil)
+        @kafka_publish_method = kafka_publish_method
+        if @kafka_publish_method.nil?
+          @kafka_producer = kafka_producer || ::Kafka.new(kafka_client_info).producer
+        end
       end
 
       def kafka_client_info
@@ -31,9 +34,13 @@ module Eh
         info
       end
 
-      def publish_message(data, topic)
-        @kafka_producer.produce(data, topic: topic)
-        @kafka_producer.deliver_messages
+      def _publish_message(data, topic)
+        if @kafka_publish_method
+          @kafka_publish_method.call(data, topic)
+        else
+          @kafka_producer.produce(data, topic: topic)
+          @kafka_producer.deliver_messages
+        end
       end
     end
   end

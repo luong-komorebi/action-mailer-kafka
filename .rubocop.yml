@@ -7,6 +7,9 @@ AllCops:
     - 'bin/*'
     - 'example/**/*'
 
+Style/GuardClause:
+  Enabled: no
+
 Style/Documentation:
   Enabled: no
 

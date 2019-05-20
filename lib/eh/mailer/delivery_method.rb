@@ -5,12 +5,29 @@ module Eh
       attr_accessor :message, :settings
 
       def kafka_client
-        @kafka_client ||= KafkaWorker.new @settings[:kafka_client_producer]
+        @kafka_client ||= KafkaWorker.new \
+          kafka_producer: @settings[:kafka_client_producer],
+          kafka_publish_method: @settings[:kafka_publish_method]
       end
 
       def logger
         @settings[:logger] || Logger.new(STDOUT)
       end
+
+      # settings params allow you to pass in
+      # 1. Your Kafka publish method
+      # With this option, you should config as below:
+      # config.action_mailer.eh-mailer_settings = {
+      #   kafka_publish_method: proc do |message_data, default_message_topic|
+      #                           YourKafkaClientInstance.publish(message_data, default_message_topic)
+      #                         end
+      # }
+      # and the data would go through your publish method
+      # 2. Your Ruby Kafka Producer or use the
+      # predefined one
+      # config.action_mailer.eh-mailer_settings = {
+      #   kafka_client_producer: YourKafkaClientInstance.producer
+      #   With this option the kafka worker would be initiated or it could reused one producer that is defined by you
 
       def initialize(**params)
         @settings = params
@@ -18,7 +35,7 @@ module Eh
 
       def deliver!(mail)
         mail_data = construct_mail_data mail
-        kafka_client.publish_message(mail_data, MAILER_TOPIC_NAME)
+        kafka_client._publish_message(mail_data, MAILER_TOPIC_NAME)
       rescue StandardError => e
         raise if @settings[:raise_on_delivery_error]
 
