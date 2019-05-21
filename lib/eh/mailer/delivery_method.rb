@@ -28,14 +28,32 @@ module Eh
       # config.action_mailer.eh-mailer_settings = {
       #   kafka_client_producer: YourKafkaClientInstance.producer
       #   With this option the kafka worker would be initiated or it could reused one producer that is defined by you
+      #   Other settings params:
+      #   - raise_on_delivery_error
+      #   - logger
+      #   - fallback
+      #     + fallback_delivery_method
+      #     + fallback_delivery_method_settings
 
       def initialize(**params)
         @settings = params
+        if @settings[:fallback]
+          @fallback_delivery_method = Mail::Configuration.instance.lookup_delivery_method(
+            @settings[:fallback][:fallback_delivery_method]
+          ).new(
+            @settings[:fallback][:fallback_delivery_method_settings]
+          )
+        end
       end
 
       def deliver!(mail)
         mail_data = construct_mail_data mail
         kafka_client._publish_message(mail_data, MAILER_TOPIC_NAME)
+      rescue Kafka::Error => e
+        raise if @settings[:raise_on_delivery_error]
+
+        @fallback_delivery_method.deliver!(mail)
+        logger.error("Fail to send email into Kafka due to: #{e.message}. Delivered using fallback method")
       rescue StandardError => e
         raise if @settings[:raise_on_delivery_error]
 

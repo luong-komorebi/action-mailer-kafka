@@ -74,7 +74,7 @@ jobs:
           path: /tmp/test-results
           destination: test-results
 
-  publish-github-release:
+  publish_github_release:
     working_directory: ~/app
     docker:
       - image: ehdevops/release_lib:0.0.1
