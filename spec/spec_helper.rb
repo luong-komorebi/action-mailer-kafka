@@ -1,3 +1,4 @@
+require 'byebug'
 require 'bundler/setup'
 require 'eh/mailer'
 require 'rspec/json_expectations'

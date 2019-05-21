@@ -146,14 +146,14 @@ describe Eh::Mailer::DeliveryMethod do
       end
     end
 
-    context 'when email contains headers' do
+    context 'when email contains custom headers' do
       before do
-        mail['headers'] = { 'X-Luong' => 'dog' }
+        mail.headers('X-Luong': 'golden', 'X-Hoa': 'husky')
       end
 
       it 'deliver message to Kafka' do
         expected_result = {
-          header: { 'X-Luong' => 'dog' },
+          header: { 'X-Luong' => 'golden', 'X-Hoa' => 'husky' },
           subject: 'Hello, world!',
           from: ['luong@handsome.rich'],
           to: ['luong@lord.lol'],

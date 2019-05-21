@@ -72,17 +72,19 @@ module Eh
           mime_type: mail.mime_type
         }
         general_data.merge! construct_mail_body(mail)
-        general_data.merge! construct_mail_header(mail)
+        general_data.merge! construct_custom_mail_header(mail)
         general_data[:attachments] = construct_attachments mail
         general_data.to_json
       end
 
-      def construct_mail_header(mail)
-        if mail['headers']
-          { header: mail['headers'].unparsed_value }
-        else
-          { header: {} }
+      def construct_custom_mail_header(mail)
+        result = { header: {} }
+        mail.header_fields.each do |h|
+          if h.field.is_a?(::Mail::OptionalField)
+            result[:header][h.name] = h.value
+          end
         end
+        result
       end
 
       def construct_attachments(mail)

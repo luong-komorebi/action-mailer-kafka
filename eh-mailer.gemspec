@@ -40,6 +40,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'mail'
   spec.add_dependency 'ruby-kafka', '~> 0.7.6'
+  spec.add_development_dependency 'appraisal'
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'byebug'
   spec.add_development_dependency 'rake'
