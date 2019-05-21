@@ -1,3 +1,5 @@
+require: rubocop-rspec
+
 AllCops:
   TargetRubyVersion: 2.3
   Exclude:
@@ -28,7 +30,7 @@ RSpec/ExampleLength:
 RSpec/MultipleExpectations:
   Enabled: no
 
-RSpec/MessageSpies:
+RSpec/EmptyExampleGroup:
   Enabled: no
 
 Metrics/BlockLength:
