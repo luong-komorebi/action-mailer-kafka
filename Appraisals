@@ -1,5 +1,5 @@
 appraise "mail-2-5" do
-  gem "mail", "~> 2.5.0"
+  gem "mail", "~> 2.5.2"
 end
 
 appraise "mail-2-6" do

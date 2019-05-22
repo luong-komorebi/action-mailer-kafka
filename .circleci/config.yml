@@ -6,7 +6,7 @@ version: 2
 jobs:
   rubocop:
     docker:
-      - image: circleci/ruby:2.4
+      - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
     steps:
@@ -16,7 +16,6 @@ jobs:
             - v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
       - run:
           name: install dependencies
           command: |
@@ -30,7 +29,7 @@ jobs:
 
   unit:
     docker:
-      - image: circleci/ruby:2.4
+      - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
     working_directory: ~/app
@@ -48,6 +47,7 @@ jobs:
           name: install dependencies
           command: |
             bundle install --jobs=4 --retry=3 --path vendor/bundle
+            bundle exec appraisal install
 
       - save_cache:
           paths:
@@ -75,7 +75,7 @@ jobs:
           destination: test-results
 
   publish_github_release:
-    working_directory: ~/app
+    working_directory: ~/ap
     docker:
       - image: ehdevops/release_lib:0.0.1
         environment:
