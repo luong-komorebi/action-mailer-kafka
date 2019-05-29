@@ -13,3 +13,6 @@ tags
 .byebug_history
 Gemfile.lock
 gemfiles/*.gemfile.lock
+coverage
+tmp
+vendor

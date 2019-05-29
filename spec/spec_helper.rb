@@ -3,6 +3,17 @@ require 'bundler/setup'
 require 'eh/mailer'
 require 'rspec/json_expectations'
 
+# Setup coverage report
+require 'simplecov'
+SimpleCov.start if ENV['COVERAGE']
+puts 'SimpleCov started successfully!'
+
+SimpleCov.at_exit do
+  SimpleCov.result.format!
+end
+
+SimpleCov.minimum_coverage 80
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = '.rspec_status'

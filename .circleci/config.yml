@@ -4,6 +4,29 @@
 #
 version: 2
 jobs:
+  rubycritic:
+    docker:
+      - image: circleci/ruby:2.3
+        environment:
+          LOG_LEVEL: DEBUG
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+      - run:
+          name: install dependencies
+          command: |
+            bundle install --jobs=4 --retry=3 --path vendor/bundle
+
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
+      - run: bundle exec rubycritic -s 90 --no-browser -f console --suppress-ratings lib/
+
   rubocop:
     docker:
       - image: circleci/ruby:2.3
@@ -62,7 +85,7 @@ jobs:
             TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | \
               circleci tests split --split-by=timings)"
 
-            bundle exec appraisal rspec \
+            COVERAGE=true bundle exec appraisal rspec \
               --format progress \
               --color \
               $TEST_FILES
@@ -118,6 +141,8 @@ workflows:
     jobs:
       - unit:
           context: org-global
+      - rubycritic:
+          context: org-global
       - rubocop:
           context: org-global
       - publish_new_version:
@@ -144,6 +169,7 @@ workflows:
           requires:
             - unit
             - rubocop
+            - rubycritic
             - publish_new_version
       - publish:
           context: org-global
@@ -154,6 +180,7 @@ workflows:
           requires:
             - rubocop
             - unit
+            - rubycritic
             - publish_new_version
             - publish_github_release
 
