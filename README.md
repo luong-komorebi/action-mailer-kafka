@@ -1,8 +1,8 @@
 # Eh::Mailer
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/eh/mailer`. To experiment with that code, run `bin/console` for an interactive prompt.
+Welcome to Eh-Mailer! This gem is a unified interface to send emails to Kafka and then consumed by mail service. It takes care of the transport layer by defining a delivery method for `action-mailer`. In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/eh/mailer`.
 
-TODO: Delete this and the text above, and describe your gem
+To see the gem in action, go to example folder and start the example rails app.
 
 ## Installation
 
@@ -20,16 +20,9 @@ Or install it yourself as:
 
     $ gem install eh-mailer
 
-## Usage
-
-TODO: Write usage instructions here
-
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+- To run the test, do ` bundle exec rspec `
+- To see the coverage of your codes, run ` COVERAGE=true bundle exec rspec `. If coverage drops below 80%, CI will fail
+- To see quality reporter, run ` bundle exec rubycritic -s 90 --suppress-ratings app/ `. If quality score drops below 90, CI will fail
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/eh-mailer.
