@@ -82,7 +82,7 @@ jobs:
           name: run tests
           command: |
             mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | \
+            TEST_FILES="$(circleci tests glob "spec/units/*_spec.rb" | \
               circleci tests split --split-by=timings)"
 
             COVERAGE=true bundle exec appraisal rspec \
@@ -96,6 +96,51 @@ jobs:
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
+
+  integration:
+    docker:
+      - image: circleci/ruby:2.3
+        environment:
+          LOG_LEVEL: DEBUG
+      - image: wurstmeister/zookeeper
+      - image: wurstmeister/kafka:0.11.0.1
+        environment:
+          KAFKA_ADVERTISED_HOST_NAME: localhost
+          KAFKA_ADVERTISED_PORT: 9092
+          KAFKA_PORT: 9092
+          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+          KAFKA_DELETE_TOPIC_ENABLE: true
+
+    working_directory: ~/app
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: install dependencies
+          command: |
+            bundle install --jobs=4 --retry=3 --path vendor/bundle
+            bundle exec appraisal install
+
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
+
+      - run:
+          name: run integration tests
+          command: |
+            mkdir /tmp/test-results
+            TEST_FILES="spec/integrations/*_spec.rb"
+
+            bundle exec rspec \
+              --format progress \
+              --color \
+              $TEST_FILES
 
   publish_github_release:
     working_directory: ~/app
@@ -141,6 +186,8 @@ workflows:
     jobs:
       - unit:
           context: org-global
+      - integration:
+          context: org-global
       - rubycritic:
           context: org-global
       - rubocop:
@@ -168,6 +215,7 @@ workflows:
                 - master
           requires:
             - unit
+            - integration
             - rubocop
             - rubycritic
             - publish_new_version
@@ -180,6 +228,7 @@ workflows:
           requires:
             - rubocop
             - unit
+            - integration
             - rubycritic
             - publish_new_version
             - publish_github_release

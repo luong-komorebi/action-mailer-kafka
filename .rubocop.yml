@@ -35,6 +35,9 @@ RSpec/MultipleExpectations:
 RSpec/EmptyExampleGroup:
   Enabled: no
 
+RSpec/DescribeClass:
+  Enabled: no
+
 Metrics/BlockLength:
   Enabled: no
 
