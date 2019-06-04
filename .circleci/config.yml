@@ -82,7 +82,7 @@ jobs:
           name: run tests
           command: |
             mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/units/*_spec.rb" | \
+            TEST_FILES="$(circleci tests glob "spec/units/**/*_spec.rb" | \
               circleci tests split --split-by=timings)"
 
             COVERAGE=true bundle exec appraisal rspec \
@@ -102,6 +102,7 @@ jobs:
       - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
+          INTEGRATION_TEST: true
       - image: wurstmeister/zookeeper
       - image: wurstmeister/kafka:0.11.0.1
         environment:
