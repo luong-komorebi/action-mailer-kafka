@@ -39,7 +39,7 @@ module RailsTestHelper
           original_gemfile = ENV.delete 'BUNDLE_GEMFILE'
           begin
             system 'bundle lock'
-            system 'bundle install --deployment'
+            system 'bundle install --without development,test'
           ensure
             ENV['BUNDLE_GEMFILE'] = original_gemfile if original_gemfile
           end

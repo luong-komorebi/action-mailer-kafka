@@ -137,7 +137,7 @@ jobs:
             mkdir /tmp/test-results
             TEST_FILES="spec/integrations/*_spec.rb"
 
-            bundle exec rspec \
+            bundle exec appraisal rspec \
               --format progress \
               --color \
               $TEST_FILES
