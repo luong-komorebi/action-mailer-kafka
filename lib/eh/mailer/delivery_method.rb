@@ -1,7 +1,7 @@
 module Eh
   module Mailer
     class DeliveryMethod
-      MAILER_TOPIC_NAME = 'EmploymentHero.Emails'.freeze
+      MAILER_TOPIC_NAME = 'Mail.Mails.Send'.freeze
       attr_accessor :message, :settings
 
       def kafka_client
