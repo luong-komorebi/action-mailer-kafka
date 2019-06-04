@@ -4,7 +4,8 @@ gem 'eh-mailer', path: base_dir
 environment 'config.action_mailer.raise_delivery_errors = true'
 environment 'config.action_mailer.delivery_method = :eh_mailer'
 
-route "root to: 'home#index'"
+run 'rm public/index.html'
+route "root :to => 'home#index', :format => false"
 
 file 'app/mailers/example_mailer.rb', <<~CODE
   class ExampleMailer < ActionMailer::Base
@@ -37,8 +38,8 @@ CODE
 file 'app/controllers/home_controller.rb', <<~CODE
   class HomeController < ApplicationController
     def index
-      ExampleMailer.sample_email.deliver_now!
-      render plain: "OK"
+      ExampleMailer.sample_email.deliver!
+      render text: "OK"
     end
   end
 CODE
