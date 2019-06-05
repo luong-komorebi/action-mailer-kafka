@@ -94,7 +94,11 @@ describe Eh::Mailer::DeliveryMethod do
 
       context 'when raise on delivery option is not set' do
         let(:mailer) do
-          described_class.new(kafka_client_producer: fake_kafka_producer, raise_on_delivery_error: true, kafka_mail_topic: topic)
+          described_class.new(
+            kafka_client_producer: fake_kafka_producer,
+            raise_on_delivery_error: true,
+            kafka_mail_topic: topic
+          )
         end
 
         it 'log the error and raise exception' do

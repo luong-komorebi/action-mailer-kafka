@@ -3,7 +3,7 @@ gem 'eh-mailer', path: base_dir
 
 environment 'config.action_mailer.raise_delivery_errors = true'
 environment 'config.action_mailer.delivery_method = :eh_mailer'
-environment "config.action_mailer_eh_mailer_settings = {
+environment "config.action_mailer.eh_mailer_settings = {
   kafka_mail_topic: 'Mail.Mails.Send'
 }"
 
