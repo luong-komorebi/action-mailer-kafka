@@ -9,11 +9,11 @@ describe Eh::Mailer::DeliveryMethod do
       cc: 'luong@checkmate.com',
       to: 'luong@lord.lol'
   end
-  let(:topic) { Eh::Mailer::DeliveryMethod::MAILER_TOPIC_NAME }
+  let(:topic) { 'Mail.Mails.Send' }
 
   context 'when mailer use a kafka publish method defined by user' do
     let(:mailer) do
-      described_class.new(kafka_publish_method: proc { |message, topic| [message, topic] })
+      described_class.new(kafka_publish_proc: proc { |message, topic| [message, topic] }, kafka_mail_topic: topic)
     end
 
     context 'when email is plain text' do
@@ -43,7 +43,7 @@ describe Eh::Mailer::DeliveryMethod do
   context 'when mailer use a kafka publish method defined by user' do
     let(:fake_kafka_producer) { FakeKafkaProducer.new }
     let(:mailer) do
-      described_class.new(kafka_client_producer: fake_kafka_producer)
+      described_class.new(kafka_client_producer: fake_kafka_producer, kafka_mail_topic: topic)
     end
 
     context 'when email is plain text' do
@@ -76,7 +76,7 @@ describe Eh::Mailer::DeliveryMethod do
 
       context 'when raise on delivery option is set' do
         let(:mailer) do
-          described_class.new(kafka_client_producer: fake_kafka_producer)
+          described_class.new(kafka_client_producer: fake_kafka_producer, kafka_mail_topic: topic)
         end
 
         let(:logger_instance) { instance_double(Logger) }
@@ -94,7 +94,7 @@ describe Eh::Mailer::DeliveryMethod do
 
       context 'when raise on delivery option is not set' do
         let(:mailer) do
-          described_class.new(kafka_client_producer: fake_kafka_producer, raise_on_delivery_error: true)
+          described_class.new(kafka_client_producer: fake_kafka_producer, raise_on_delivery_error: true, kafka_mail_topic: topic)
         end
 
         it 'log the error and raise exception' do
@@ -205,6 +205,7 @@ describe Eh::Mailer::DeliveryMethod do
       context 'when fallback is set' do
         let(:mailer) do
           described_class.new(
+            kafka_mail_topic: topic,
             kafka_client_producer: fake_kafka_producer,
             fallback: {
               fallback_delivery_method: :smtp,
@@ -243,7 +244,8 @@ describe Eh::Mailer::DeliveryMethod do
         let(:mailer) do
           described_class.new(
             kafka_client_producer: fake_kafka_producer,
-            raise_error_on_delivery: true
+            raise_error_on_delivery: true,
+            kafka_mail_topic: topic
           )
         end
 

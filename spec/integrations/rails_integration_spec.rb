@@ -3,6 +3,7 @@ require_relative './rails_test_helper.rb'
 
 describe 'Rails integration' do
   let(:kafka_client) { ::Kafka.new(seed_brokers: [ENV['KAFKA_BROKERS'] || 'localhost:9092']) }
+  let(:example_topic) { 'Mail.Mails.Send' }
 
   RailsTestHelper.create_rails_app
 
@@ -12,7 +13,7 @@ describe 'Rails integration' do
       expect(result).to eql('OK')
     end
     consumer = kafka_client.consumer(group_id: 'test')
-    consumer.subscribe(Eh::Mailer::DeliveryMethod::MAILER_TOPIC_NAME)
+    consumer.subscribe(example_topic)
     consumer.each_message do |message|
       expect(message).not_to be_nil
       consumer.stop
