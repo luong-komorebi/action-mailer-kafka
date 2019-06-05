@@ -34,7 +34,7 @@ module Eh
         info
       end
 
-      def _publish_message(data, topic)
+      def publish_message(data, topic)
         if @kafka_publish_proc
           @kafka_publish_proc.call(data, topic)
         else

@@ -59,7 +59,7 @@ module Eh
 
       def deliver!(mail)
         mail_data = construct_mail_data mail
-        kafka_client._publish_message(mail_data, mailer_topic_name)
+        kafka_client.publish_message(mail_data, mailer_topic_name)
       rescue Kafka::Error => e
         raise if @settings[:raise_on_delivery_error]
 
