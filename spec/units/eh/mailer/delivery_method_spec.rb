@@ -11,6 +11,16 @@ describe Eh::Mailer::DeliveryMethod do
   end
   let(:topic) { 'Mail.Mails.Send' }
 
+  context 'when mailer receives insufficient or unnecessary args' do
+    let(:mailer) do
+      described_class.new(a: 1, b: 2)
+    end
+
+    it 'raise error' do
+      expect { mailer }.to raise_error(Eh::Mailer::RequiredParamsError)
+    end
+  end
+
   context 'when mailer use a kafka publish method defined by user' do
     let(:mailer) do
       described_class.new(kafka_publish_proc: proc { |message, topic| [message, topic] }, kafka_mail_topic: topic)

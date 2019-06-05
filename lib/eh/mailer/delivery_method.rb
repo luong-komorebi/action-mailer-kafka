@@ -49,18 +49,16 @@ module Eh
 
       def initialize(**params)
         @settings = params
-        if @settings[:kafka_mail_topic].empty?
-          raise StandardError, 'No kafka topic specify'
-        end
-
-        @mailer_topic_name = @settings[:kafka_mail_topic]
+        @mailer_topic_name = @settings.fetch(:kafka_mail_topic)
         if @settings[:fallback]
           @fallback_delivery_method = Mail::Configuration.instance.lookup_delivery_method(
-            @settings[:fallback][:fallback_delivery_method]
+            @settings[:fallback].fetch(:fallback_delivery_method)
           ).new(
-            @settings[:fallback][:fallback_delivery_method_settings]
+            @settings[:fallback].fetch(:fallback_delivery_method_settings)
           )
         end
+      rescue KeyError => e
+        raise RequiredParamsError.new(params, e.message)
       end
 
       def kafka_client
@@ -79,14 +77,13 @@ module Eh
         mail_data = construct_mail_data mail
         kafka_client.publish_message(mail_data, mailer_topic_name)
       rescue Kafka::Error => e
-        raise if @settings[:raise_on_delivery_error]
-
-        @fallback_delivery_method.deliver!(mail)
         logger.error("Fail to send email into Kafka due to: #{e.message}. Delivered using fallback method")
+        @fallback_delivery_method.deliver!(mail)
+        raise ParsingOperationError, "Fail to send email due to: #{error_msg}" if @settings[:raise_on_delivery_error]
       rescue StandardError => e
-        raise if @settings[:raise_on_delivery_error]
-
-        logger.error("Fail to send email due to: #{e.message}")
+        error_msg = "Fail to send email due to: #{e.message}"
+        logger.error(error_msg)
+        raise ParsingOperationError, "Fail to send email due to: #{error_msg}" if @settings[:raise_on_delivery_error]
       end
 
       private
