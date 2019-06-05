@@ -9,6 +9,7 @@ module Eh
       # 1. Your Kafka publish proc
       # With this option, you should config as below:
       # config.action_mailer.eh_mailer_settings = {
+      #   kafka_mail_topic: 'YourKafkaTopic',
       #   kafka_publish_proc: proc do |message_data, default_message_topic|
       #                           YourKafkaClientInstance.publish(message_data,
       #                                                           default_message_topic)
@@ -17,18 +18,33 @@ module Eh
       #
       # and the data would go through your publish process
       #
-      # 2. Your Ruby Kafka Producer or use the predefined one
+      # 2. Your Ruby Kafka Producer
+      # With this option, the library will use your kafka producer:
       # config.action_mailer.eh_mailer_settings = {
       #   kafka_mail_topic: 'YourKafkaTopic',
       #   kafka_client_producer: YourKafkaClientInstance.producer
       #   # With this option the kafka worker would be initiated or
       #   # it could reused one producer that is defined by you
-      #   # Other settings params:
-      #   # - raise_on_delivery_error
-      #   # - logger
-      #   # - fallback
-      #   # + fallback_delivery_method
-      #   # + fallback_delivery_method_settings
+      # }
+      #
+      # 3. Your kafka client info
+      # With this option, the library will generate a kafka instance for you:
+      # config.action_mailer.eh_mailer_settings = {
+      #   kafka_mail_topic: 'YourKafkaTopic',
+      #   kafka_client_info: {
+      #     seed_brokers: ['localhost:9090'],
+      #     logger: logger,
+      #     ssl_ca_cert: '/path/to/cert'
+      #     # For more option on what to pass here, see https://github.com/zendesk/ruby-kafka/blob/master/lib/kafka/client.rb#L20
+      #   }
+      # }
+      #
+      # Other settings params:
+      #   - raise_on_delivery_error
+      #   - logger
+      #   - fallback
+      #     + fallback_delivery_method
+      #     + fallback_delivery_method_settings
       #   }
 
       def initialize(**params)
@@ -48,9 +64,11 @@ module Eh
       end
 
       def kafka_client
-        @kafka_client ||= KafkaWorker.new \
+        KafkaWorker.new(
           kafka_producer: @settings[:kafka_client_producer],
+          kafka_client_info: @settings[:kafka_client_info],
           kafka_publish_proc: @settings[:kafka_publish_proc]
+        )
       end
 
       def logger
