@@ -169,7 +169,7 @@ describe Eh::Mailer::DeliveryMethod do
 
     context 'when email is multipart' do
       before do
-        mail.content_type 'multipart/alternative'
+        mail.content_type = 'multipart/alternative'
         mail.part do |part|
           part.text_part = Mail::Part.new do
             content_type 'text/plain'
