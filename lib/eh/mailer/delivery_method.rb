@@ -62,7 +62,7 @@ module Eh
       end
 
       def kafka_client
-        KafkaWorker.new(
+        @kafka_client ||= KafkaWorker.new(
           kafka_producer: @settings[:kafka_client_producer],
           kafka_client_info: @settings[:kafka_client_info],
           kafka_publish_proc: @settings[:kafka_publish_proc]
