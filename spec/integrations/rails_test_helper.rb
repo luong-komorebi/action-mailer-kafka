@@ -48,18 +48,25 @@ module RailsTestHelper
       puts '**** Finished creating test Rails app'
     end
 
-    def run_rails_app(timeout: 5)
+    def run_rails_app(timeout: (ENV['RAILS_START_TIMEOUT'] || 10).to_i)
       Dir.chdir APP_DIR do
         Bundler.with_original_env do
-          Open3.popen2e 'bundle exec rails s -p 3000' do |_stdin, stdout, thr|
+          Open3.popen2e 'bundle exec rails s -p 3000' do |stdin, stdout, thr|
             begin
               Timeout.timeout timeout do
                 loop do
                   line = stdout.gets
                   break if !line || line =~ /WEBrick::HTTPServer#start/
                 end
+                puts 'Rails server started'
+                sleep 5
                 yield stdout if block_given?
               end
+            rescue Timeout::Error
+              puts "Timeout #{thr.value}"
+            rescue StandardError => e
+              puts e.message
+              exit 1
             ensure
               Process.kill('INT', thr.pid)
             end
@@ -82,6 +89,7 @@ module RailsTestHelper
 
     def rails_request(path)
       resp = Faraday.get "http://localhost:3000#{path}"
+      puts "Request with Faraday responds: #{resp.inspect}"
       resp.body
     end
   end

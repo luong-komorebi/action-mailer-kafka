@@ -50,10 +50,16 @@ describe Eh::Mailer::DeliveryMethod do
     end
   end
 
-  context 'when mailer use a kafka publish method defined by user' do
-    let(:fake_kafka_producer) { FakeKafkaProducer.new }
+  context 'when mailer use our own initialized kafka instance' do
+    let(:kafka_client_info) { { seed_brokers: ['localhost:9092'] } }
     let(:mailer) do
-      described_class.new(kafka_client_producer: fake_kafka_producer, kafka_mail_topic: topic)
+      described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic)
+    end
+    let(:fake_kafka) { instance_double(Kafka::Client) }
+
+    before do
+      allow(Kafka).to receive(:new).with(kafka_client_info).and_return(fake_kafka)
+      allow(fake_kafka).to receive(:deliver_message).with(kind_of(String), hash_including(:topic))
     end
 
     context 'when email is plain text' do
@@ -63,7 +69,6 @@ describe Eh::Mailer::DeliveryMethod do
 
       it 'deliver message to Kafka' do
         expected_result = {
-          header: {},
           subject: 'Hello, world!',
           from: ['luong@handsome.rich'],
           to: ['luong@lord.lol'],
@@ -71,22 +76,53 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
           body: '',
+          header: {},
           attachments: []
         }
         mailer.deliver!(mail)
-        expect(fake_kafka_producer.queue[topic]).to include_json(expected_result)
+        expect(Kafka).to have_received(:new).with(kafka_client_info)
+        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
+      end
+    end
+
+    context 'when email is html' do
+      before do
+        mail.content_type = 'text/html'
+      end
+
+      it 'deliver message to Kafka' do
+        expected_result = {
+          subject: 'Hello, world!',
+          from: ['luong@handsome.rich'],
+          to: ['luong@lord.lol'],
+          cc: ['luong@checkmate.com'],
+          bcc: ['luong@overpower.invincible'],
+          mime_type: 'text/html',
+          body: '',
+          header: {},
+          attachments: []
+        }
+        mailer.deliver!(mail)
+        expect(Kafka).to have_received(:new).with(kafka_client_info)
+        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
       end
     end
 
     context 'when there is an error' do
+      let(:faulty_mail_instance) { instance_double(Mail::Message) }
+
       before do
-        mail.content_type = 'text/plain'
-        mail.body = FakeKafkaProducer::SECRET_STANDARD_ERROR_TRIGGER
+        allow(Mail).to receive(:new).and_return(faulty_mail_instance)
+        allow(faulty_mail_instance).to receive(:subject).with(any_args).and_raise(StandardError)
+      end
+
+      after do
+        allow(Mail).to receive(:new).and_call_original
       end
 
       context 'when raise on delivery option is set' do
         let(:mailer) do
-          described_class.new(kafka_client_producer: fake_kafka_producer, kafka_mail_topic: topic)
+          described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic)
         end
 
         let(:logger_instance) { instance_double(Logger) }
@@ -98,6 +134,7 @@ describe Eh::Mailer::DeliveryMethod do
 
         it 'log the error and raise exception' do
           mailer.deliver!(mail)
+          expect(faulty_mail_instance).to have_received(:subject).with(any_args)
           expect(logger_instance).to have_received(:error)
         end
       end
@@ -105,7 +142,7 @@ describe Eh::Mailer::DeliveryMethod do
       context 'when raise on delivery option is not set' do
         let(:mailer) do
           described_class.new(
-            kafka_client_producer: fake_kafka_producer,
+            kafka_client_info: kafka_client_info,
             raise_on_delivery_error: true,
             kafka_mail_topic: topic
           )
@@ -117,67 +154,51 @@ describe Eh::Mailer::DeliveryMethod do
       end
     end
 
-    context 'when email is html' do
-      before do
-        mail.content_type = 'text/html'
-      end
-
-      it 'deliver message to Kafka' do
-        expected_result = {
-          header: {},
-          subject: 'Hello, world!',
-          from: ['luong@handsome.rich'],
-          to: ['luong@lord.lol'],
-          cc: ['luong@checkmate.com'],
-          bcc: ['luong@overpower.invincible'],
-          mime_type: 'text/html',
-          body: '',
-          attachments: []
-        }
-        mailer.deliver!(mail)
-        expect(fake_kafka_producer.queue[topic]).to include_json(expected_result)
-      end
-    end
-
     context 'when there is a friendly name to' do
       before do
         mail.to = 'Luong Shiba <luong@shiba.inu>'
+        mail.content_type = 'text/plain'
       end
 
       it 'deliver message to Kafka' do
         expected_result = {
-          header: {},
           subject: 'Hello, world!',
           from: ['luong@handsome.rich'],
           to: ['luong@shiba.inu'],
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
+          mime_type: 'text/plain',
           body: '',
+          header: {},
           attachments: []
         }
         mailer.deliver!(mail)
-        expect(fake_kafka_producer.queue[topic]).to include_json(expected_result)
+        expect(Kafka).to have_received(:new).with(kafka_client_info)
+        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
       end
     end
 
     context 'when email contains custom headers' do
       before do
         mail.headers('X-Luong': 'golden', 'X-Hoa': 'husky')
+        mail.content_type = 'text/plain'
       end
 
       it 'deliver message to Kafka' do
         expected_result = {
-          header: { 'X-Luong' => 'golden', 'X-Hoa' => 'husky' },
           subject: 'Hello, world!',
           from: ['luong@handsome.rich'],
           to: ['luong@lord.lol'],
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
+          mime_type: 'text/plain',
           body: '',
+          header: { 'X-Luong' => 'golden', 'X-Hoa' => 'husky' },
           attachments: []
         }
         mailer.deliver!(mail)
-        expect(fake_kafka_producer.queue[topic]).to include_json(expected_result)
+        expect(Kafka).to have_received(:new).with(kafka_client_info)
+        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
       end
     end
 
@@ -204,23 +225,29 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'multipart/alternative',
-          html_part: 'Luong <b>dep trai</b>.',
           text_part: 'Luong dep trai.',
+          html_part: 'Luong <b>dep trai</b>.',
+          header: {},
           attachments: []
         }
         mailer.deliver!(mail)
-        expect(fake_kafka_producer.queue[topic]).to include_json(expected_result)
+        expect(Kafka).to have_received(:new).with(kafka_client_info)
+        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
       end
     end
 
     context 'when email raises Kafka exception' do
-      let(:fake_kafka_producer) { FakeKafkaProducer.new }
+      before do
+        allow(fake_kafka).to receive(:deliver_message).with(
+          kind_of(String), hash_including(:topic)
+        ).and_raise(Kafka::Error)
+      end
 
       context 'when fallback is set' do
         let(:mailer) do
           described_class.new(
             kafka_mail_topic: topic,
-            kafka_client_producer: fake_kafka_producer,
+            kafka_client_info: kafka_client_info,
             fallback: {
               fallback_delivery_method: :smtp,
               fallback_delivery_method_settings: {
@@ -244,28 +271,27 @@ describe Eh::Mailer::DeliveryMethod do
 
         before do
           mail.content_type = 'text/plain'
-          mail.body = FakeKafkaProducer::SECRET_KAFKA_ERROR_TRIGGER
+          mail.body = 'KafkaError'
         end
 
         it 'use fallback method' do
           mailer.deliver! mail
           message = MockSMTP.deliveries.first
-          expect(Mail.new(message).decoded).to eq(FakeKafkaProducer::SECRET_KAFKA_ERROR_TRIGGER)
+          expect(Mail.new(message).decoded).to eq('KafkaError')
         end
       end
 
       context 'when fallback is not set' do
         let(:mailer) do
           described_class.new(
-            kafka_client_producer: fake_kafka_producer,
-            raise_error_on_delivery: true,
+            kafka_client_info: kafka_client_info,
+            raise_on_delivery_error: true,
             kafka_mail_topic: topic
           )
         end
 
         before do
           mail.content_type = 'text/plain'
-          mail.body = FakeKafkaProducer::SECRET_KAFKA_ERROR_TRIGGER
         end
 
         it 'raise an error' do

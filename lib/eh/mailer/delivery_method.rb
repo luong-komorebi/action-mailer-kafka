@@ -3,7 +3,7 @@ module Eh
     class DeliveryMethod
       SUPPORTED_MULTIPART_MIME_TYPES = ['multipart/alternative', 'multipart/mixed', 'multipart/related'].freeze
       attr_accessor :message, :settings
-      attr_reader :mailer_topic_name
+      attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc
 
       # settings params allow you to pass in
       # 1. Your Kafka publish proc
@@ -18,16 +18,7 @@ module Eh
       #
       # and the data would go through your publish process
       #
-      # 2. Your Ruby Kafka Producer
-      # With this option, the library will use your kafka producer:
-      # config.action_mailer.eh_mailer_settings = {
-      #   kafka_mail_topic: 'YourKafkaTopic',
-      #   kafka_client_producer: YourKafkaClientInstance.producer
-      #   # With this option the kafka worker would be initiated or
-      #   # it could reused one producer that is defined by you
-      # }
-      #
-      # 3. Your kafka client info
+      # 2. Your kafka client info
       # With this option, the library will generate a kafka instance for you:
       # config.action_mailer.eh_mailer_settings = {
       #   kafka_mail_topic: 'YourKafkaTopic',
@@ -57,16 +48,16 @@ module Eh
             @settings[:fallback].fetch(:fallback_delivery_method_settings)
           )
         end
+        if @settings[:kafka_publish_proc]
+          @kafka_publish_proc = @settings[:kafka_publish_proc]
+        else
+          @kafka_client = ::Kafka.new(@settings.fetch(:kafka_client_info))
+          @kafka_publish_proc = proc { |data, topic|
+            kafka_client.deliver_message(data, topic: topic)
+          }
+        end
       rescue KeyError => e
         raise RequiredParamsError.new(params, e.message)
-      end
-
-      def kafka_client
-        @kafka_client ||= KafkaWorker.new(
-          kafka_producer: @settings[:kafka_client_producer],
-          kafka_client_info: @settings[:kafka_client_info],
-          kafka_publish_proc: @settings[:kafka_publish_proc]
-        )
       end
 
       def logger
@@ -75,15 +66,16 @@ module Eh
 
       def deliver!(mail)
         mail_data = construct_mail_data mail
-        kafka_client.publish_message(mail_data, mailer_topic_name)
+        kafka_publish_proc.call(mail_data, mailer_topic_name)
       rescue Kafka::Error => e
-        logger.error("Fail to send email into Kafka due to: #{e.message}. Delivered using fallback method")
-        @fallback_delivery_method.deliver!(mail)
-        raise ParsingOperationError, "Fail to send email due to: #{error_msg}" if @settings[:raise_on_delivery_error]
+        error_msg = "Fail to send email into Kafka due to: #{e.message}. Delivered using fallback method"
+        logger.error(error_msg)
+        @fallback_delivery_method.deliver!(mail) if @settings[:fallback]
+        raise Kafka::Error, error_msg if @settings[:raise_on_delivery_error]
       rescue StandardError => e
         error_msg = "Fail to send email due to: #{e.message}"
         logger.error(error_msg)
-        raise ParsingOperationError, "Fail to send email due to: #{error_msg}" if @settings[:raise_on_delivery_error]
+        raise ParsingOperationError, error_msg if @settings[:raise_on_delivery_error]
       end
 
       private

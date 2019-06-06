@@ -1,12 +1,8 @@
-# Ruby CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-ruby/ for more details
-#
 version: 2
 jobs:
   rubycritic:
     docker:
-      - image: circleci/ruby:2.3
+      - image: circleci/ruby:2.4
         environment:
           LOG_LEVEL: DEBUG
     steps:
@@ -29,7 +25,7 @@ jobs:
 
   rubocop:
     docker:
-      - image: circleci/ruby:2.3
+      - image: circleci/ruby:2.4
         environment:
           LOG_LEVEL: DEBUG
     steps:
@@ -52,7 +48,7 @@ jobs:
 
   unit:
     docker:
-      - image: circleci/ruby:2.3
+      - image: circleci/ruby:2.4
         environment:
           LOG_LEVEL: DEBUG
     working_directory: ~/app
@@ -99,10 +95,11 @@ jobs:
 
   integration:
     docker:
-      - image: circleci/ruby:2.3
+      - image: circleci/ruby:2.4
         environment:
           LOG_LEVEL: DEBUG
           INTEGRATION_TEST: true
+          RAILS_START_TIMEOUT: 50
       - image: wurstmeister/zookeeper
       - image: wurstmeister/kafka:0.11.0.1
         environment:
@@ -115,33 +112,16 @@ jobs:
     working_directory: ~/app
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
       - run:
           name: install dependencies
           command: |
             bundle install --jobs=4 --retry=3 --path vendor/bundle
             bundle exec appraisal install
-
-      - save_cache:
-          paths:
-            - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
-
+      - run: dockerize -wait tcp://localhost:9092 -timeout 1m
       - run:
           name: run integration tests
           command: |
-            mkdir /tmp/test-results
-            TEST_FILES="spec/integrations/*_spec.rb"
-
-            bundle exec appraisal rspec \
-              --format progress \
-              --color \
-              $TEST_FILES
+            bundle exec appraisal bundle exec rspec spec/integrations/*_spec.rb
 
   publish_github_release:
     working_directory: ~/app

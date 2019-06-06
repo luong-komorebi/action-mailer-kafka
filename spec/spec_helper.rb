@@ -15,6 +15,13 @@ end
 SimpleCov.minimum_coverage 80
 
 RSpec.configure do |config|
+  config.mock_with :rspec do |mocks|
+    # This option should be set when all dependencies are being loaded
+    # before a spec run, as is the case in a typical spec helper. It will
+    # cause any verifying double instantiation for a class that does not
+    # exist to raise, protecting against incorrectly spelt names.
+    mocks.verify_doubled_constant_names = true
+  end
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = '.rspec_status'
 
@@ -25,31 +32,6 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
   config.expose_dsl_globally = true
-end
-
-class FakeKafkaProducer
-  attr_reader :queue
-
-  SECRET_KAFKA_ERROR_TRIGGER = 'raise_kafka_error'.freeze
-  SECRET_STANDARD_ERROR_TRIGGER = 'raise_standard_error'.freeze
-
-  def initialize
-    @queue = {}
-  end
-
-  def produce(package, topic: nil)
-    if package.include? SECRET_KAFKA_ERROR_TRIGGER
-      raise Kafka::MessageSizeTooLarge, 'Fake Kafka Error'
-    end
-
-    if package.include? SECRET_STANDARD_ERROR_TRIGGER
-      raise StandardError, 'Fake Standard Error'
-    end
-
-    queue[topic] = package
-  end
-
-  def deliver_messages; end
 end
 
 # Original mockup from ActionMailer
