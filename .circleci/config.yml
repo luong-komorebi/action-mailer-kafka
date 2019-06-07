@@ -2,7 +2,7 @@ version: 2
 jobs:
   rubycritic:
     docker:
-      - image: circleci/ruby:2.4
+      - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
     steps:
@@ -25,7 +25,7 @@ jobs:
 
   rubocop:
     docker:
-      - image: circleci/ruby:2.4
+      - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
     steps:
@@ -48,7 +48,7 @@ jobs:
 
   unit:
     docker:
-      - image: circleci/ruby:2.4
+      - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
     working_directory: ~/app
@@ -93,13 +93,12 @@ jobs:
           path: /tmp/test-results
           destination: test-results
 
-  integration:
+  integration_rails_4:
     docker:
-      - image: circleci/ruby:2.4
+      - image: circleci/ruby:2.3
         environment:
           LOG_LEVEL: DEBUG
           INTEGRATION_TEST: true
-          RAILS_START_TIMEOUT: 50
       - image: wurstmeister/zookeeper
       - image: wurstmeister/kafka:0.11.0.1
         environment:
@@ -115,13 +114,38 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
-            bundle exec appraisal install
-      - run: dockerize -wait tcp://localhost:9092 -timeout 1m
+            BUNDLE_GEMFILE=./gemfiles/rails_4.gemfile bundle install --path ~/app/vendor/bundle
       - run:
           name: run integration tests
           command: |
-            bundle exec appraisal bundle exec rspec spec/integrations/*_spec.rb
+            bundle exec rspec spec/integrations/rails_integration_spec.rb
+
+  integration_rails_5:
+    docker:
+      - image: circleci/ruby:2.3
+        environment:
+          LOG_LEVEL: DEBUG
+          INTEGRATION_TEST: true
+      - image: wurstmeister/zookeeper
+      - image: wurstmeister/kafka:0.11.0.1
+        environment:
+          KAFKA_ADVERTISED_HOST_NAME: localhost
+          KAFKA_ADVERTISED_PORT: 9092
+          KAFKA_PORT: 9092
+          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+          KAFKA_DELETE_TOPIC_ENABLE: true
+
+    working_directory: ~/app
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            BUNDLE_GEMFILE=./gemfiles/rails_5.gemfile bundle install --path ~/app/vendor/bundle
+      - run:
+          name: run integration tests
+          command: |
+             bundle exec rspec spec/integrations/rails_integration_spec.rb
 
   publish_github_release:
     working_directory: ~/app
@@ -167,7 +191,9 @@ workflows:
     jobs:
       - unit:
           context: org-global
-      - integration:
+      - integration_rails_4:
+          context: org-global
+      - integration_rails_5:
           context: org-global
       - rubycritic:
           context: org-global
@@ -196,7 +222,8 @@ workflows:
                 - master
           requires:
             - unit
-            - integration
+            - integration_rails_4
+            - integration_rails_5
             - rubocop
             - rubycritic
             - publish_new_version
@@ -209,7 +236,8 @@ workflows:
           requires:
             - rubocop
             - unit
-            - integration
+            - integration_rails_4
+            - integration_rails_5
             - rubycritic
             - publish_new_version
             - publish_github_release

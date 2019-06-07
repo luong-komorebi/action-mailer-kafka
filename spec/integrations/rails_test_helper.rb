@@ -2,6 +2,7 @@ require 'rails'
 require 'faraday'
 require 'fileutils'
 require 'open3'
+require 'socket'
 require 'timeout'
 
 module RailsTestHelper
@@ -48,18 +49,25 @@ module RailsTestHelper
       puts '**** Finished creating test Rails app'
     end
 
-    def run_rails_app(timeout: (ENV['RAILS_START_TIMEOUT'] || 10).to_i)
+    def run_rails_app(timeout: 10)
       Dir.chdir APP_DIR do
         Bundler.with_original_env do
-          Open3.popen2e 'bundle exec rails s -p 3000' do |stdin, stdout, thr|
+          Open3.popen2e 'bundle exec rails s -b 0.0.0.0 -p 3000' do |stdin, stdout, thr|
             begin
               Timeout.timeout timeout do
                 loop do
-                  line = stdout.gets
-                  break if !line || line =~ /WEBrick::HTTPServer#start/
+                  # line = stdout.gets
+                  # break if !line || line =~ /WEBrick::HTTPServer#start/
+                  break if begin
+                             TCPSocket.open('localhost', 3000)
+                           rescue StandardError
+                             nil
+                           end
+
+                  puts 'Waiting for rails....'
+                  sleep 1
                 end
                 puts 'Rails server started'
-                sleep 5
                 yield stdout if block_given?
               end
             rescue Timeout::Error
@@ -68,29 +76,33 @@ module RailsTestHelper
               puts e.message
               exit 1
             ensure
+              puts 'Killing rails server process'
               Process.kill('INT', thr.pid)
+              puts 'Rails server killed'
+              stdin.close
+              stdout.close
             end
           end
         end
       end
     end
 
-    def capture_in_rails_context(cmd, timeout: 5)
-      result = nil
-      Dir.chdir APP_DIR do
-        Bundler.with_original_env do
-          Timeout.timeout timeout do
-            result = `#{cmd}`
-          end
-        end
-      end
-      result
-    end
+    # def capture_in_rails_context(cmd, timeout: 5)
+    #   result = nil
+    #   Dir.chdir APP_DIR do
+    #     Bundler.with_original_env do
+    #       Timeout.timeout timeout do
+    #         result = `#{cmd}`
+    #       end
+    #     end
+    #   end
+    #   result
+    # end
 
     def rails_request(path)
       resp = Faraday.get "http://localhost:3000#{path}"
       puts "Request with Faraday responds: #{resp.inspect}"
-      resp.body
+      resp.status.to_s
     end
-  end
+end
 end

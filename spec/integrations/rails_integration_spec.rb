@@ -8,17 +8,19 @@ describe 'Rails integration' do
   RailsTestHelper.create_rails_app
 
   it 'sends emails to Kafka without blocking' do
-    result = nil
     RailsTestHelper.run_rails_app do |_|
-      result = RailsTestHelper.rails_request '/'
+      expect(RailsTestHelper.rails_request('/')).to eql('200')
     end
 
-    expect(result).to eql('OK')
-    consumer = kafka_client.consumer(group_id: 'test')
-    consumer.subscribe(example_topic)
-    consumer.each_message do |message|
-      expect(message).not_to be_nil
-      consumer.stop
+    kafka_attempt = 0
+    begin
+      messages = kafka_client.fetch_messages(topic: example_topic, partition: 0, offset: :earliest)
+      messages.each do |m|
+        expect(m).not_to be_nil
+      end
+    rescue Kafka::LeaderNotAvailable
+      sleep 1
+      retry if (kafka_attempt += 1) < 3
     end
   end
 end

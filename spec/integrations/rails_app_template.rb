@@ -38,8 +38,8 @@ CODE
 file 'app/controllers/home_controller.rb', <<~CODE
   class HomeController < ApplicationController
     def index
-      ExampleMailer.sample_email.deliver!
-      render plain: "OK"
+      ExampleMailer.sample_email.deliver_now!
+      render plain: 'OK'
     end
   end
 CODE
