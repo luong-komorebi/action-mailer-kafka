@@ -24,7 +24,12 @@ Rails.application.configure do
   config.active_record.migration_error = :page_load
 
   config.action_mailer.delivery_method = :eh_mailer
-
+  config.action_mailer.eh_mailer_settings = {
+    kafka_mail_topic: 'Mail.Mails.Send.Staging',
+    kafka_client_info: {
+      seed_brokers: ['localhost:9092'],
+    }
+  }
   # Debug mode disables concatenation and preprocessing of assets.
   # This option may cause significant delays in view rendering with a large
   # number of complex assets.
