@@ -71,7 +71,7 @@ module Eh
         error_msg = "Fail to send email into Kafka due to: #{e.message}. Delivered using fallback method"
         logger.error(error_msg)
         @fallback_delivery_method.deliver!(mail) if @settings[:fallback]
-        raise Kafka::Error, error_msg if @settings[:raise_on_delivery_error]
+        raise KafkaOperationError, error_msg if @settings[:raise_on_delivery_error]
       rescue StandardError => e
         error_msg = "Fail to send email due to: #{e.message}"
         logger.error(error_msg)
