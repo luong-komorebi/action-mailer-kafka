@@ -1,7 +1,3 @@
-# Ruby CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-ruby/ for more details
-#
 version: 2
 jobs:
   rubycritic:
@@ -97,7 +93,7 @@ jobs:
           path: /tmp/test-results
           destination: test-results
 
-  integration:
+  integration_rails_4:
     docker:
       - image: circleci/ruby:2.3
         environment:
@@ -115,33 +111,41 @@ jobs:
     working_directory: ~/app
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
       - run:
           name: install dependencies
           command: |
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
-            bundle exec appraisal install
-
-      - save_cache:
-          paths:
-            - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "eh-mailer.gemspec" }}
-
+            BUNDLE_GEMFILE=./gemfiles/rails_4.gemfile bundle install --path ~/app/vendor/bundle
       - run:
           name: run integration tests
           command: |
-            mkdir /tmp/test-results
-            TEST_FILES="spec/integrations/*_spec.rb"
+            bundle exec rspec spec/integrations/rails_integration_spec.rb
 
-            bundle exec appraisal rspec \
-              --format progress \
-              --color \
-              $TEST_FILES
+  integration_rails_5:
+    docker:
+      - image: circleci/ruby:2.3
+        environment:
+          LOG_LEVEL: DEBUG
+          INTEGRATION_TEST: true
+      - image: wurstmeister/zookeeper
+      - image: wurstmeister/kafka:0.11.0.1
+        environment:
+          KAFKA_ADVERTISED_HOST_NAME: localhost
+          KAFKA_ADVERTISED_PORT: 9092
+          KAFKA_PORT: 9092
+          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+          KAFKA_DELETE_TOPIC_ENABLE: true
+
+    working_directory: ~/app
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            BUNDLE_GEMFILE=./gemfiles/rails_5.gemfile bundle install --path ~/app/vendor/bundle
+      - run:
+          name: run integration tests
+          command: |
+             bundle exec rspec spec/integrations/rails_integration_spec.rb
 
   publish_github_release:
     working_directory: ~/app
@@ -187,7 +191,9 @@ workflows:
     jobs:
       - unit:
           context: org-global
-      - integration:
+      - integration_rails_4:
+          context: org-global
+      - integration_rails_5:
           context: org-global
       - rubycritic:
           context: org-global
@@ -216,7 +222,8 @@ workflows:
                 - master
           requires:
             - unit
-            - integration
+            - integration_rails_4
+            - integration_rails_5
             - rubocop
             - rubycritic
             - publish_new_version
@@ -229,7 +236,8 @@ workflows:
           requires:
             - rubocop
             - unit
-            - integration
+            - integration_rails_4
+            - integration_rails_5
             - rubycritic
             - publish_new_version
             - publish_github_release

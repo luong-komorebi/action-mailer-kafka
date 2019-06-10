@@ -1,6 +1,5 @@
-require 'json'
+lib = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'eh/mailer/version'
 
-manifest_path = File.expand_path('../../app.json', __FILE__)
-version = JSON.parse(File.read(manifest_path))['version']
-
-exec("gem build eh-mailer.gemspec && curl -F package=@eh-mailer-#{version}.gem https://#{ENV['GEMFURY_TOKEN']}@push.fury.io/#{ENV['GEMFURY_PACKAGE']}/")
+exec("gem build eh-mailer.gemspec && curl -F package=@eh-mailer-#{Eh::Mailer::VERSION}.gem https://#{ENV['GEMFURY_TOKEN']}@push.fury.io/#{ENV['GEMFURY_PACKAGE']}/")
