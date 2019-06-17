@@ -96,10 +96,12 @@ module Eh
       end
 
       def construct_custom_mail_header(mail)
-        result = { header: {} }
+        result = { custom_headers: {} }
         mail.header_fields.each do |h|
-          if h.field.is_a?(::Mail::OptionalField)
-            result[:header][h.name] = h.value
+          header_name = h.name
+          header_value = h.unparsed_value
+          if h.field.is_a?(::Mail::OptionalField) && header_name.start_with?('X-')
+            result[:custom_headers][header_name] = header_value
           end
         end
         result

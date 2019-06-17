@@ -2,7 +2,7 @@
 
 Changes and additions to the library will be listed here.
 
-## 1.0.0
+## 1.0.1
 - Official release. Remove Kafka producer, take in kafka client info and publishing proc.
 
 ## 0.1.2

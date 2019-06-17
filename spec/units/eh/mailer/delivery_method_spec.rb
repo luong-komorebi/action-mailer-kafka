@@ -33,7 +33,35 @@ describe Eh::Mailer::DeliveryMethod do
 
       it 'deliver message to Kafka' do
         expected_result = {
-          header: {},
+          custom_headers: {},
+          subject: 'Hello, world!',
+          from: ['luong@handsome.rich'],
+          to: ['luong@lord.lol'],
+          cc: ['luong@checkmate.com'],
+          bcc: ['luong@overpower.invincible'],
+          mime_type: 'text/plain',
+          body: '',
+          attachments: []
+        }
+        result = mailer.deliver!(mail)
+        expect(result.first).to include_json(expected_result)
+        expect(result.last).to eq(topic)
+      end
+    end
+
+    context 'when email has custom headers' do
+      before do
+        mail.content_type = 'text/plain'
+        mail.headers('X-SMTPAPI': { 'someheader': 'someheader' }, 'Not start with X header': 'X')
+      end
+
+      it 'deliver message to Kafka' do
+        expected_result = {
+          custom_headers: {
+            'X-SMTPAPI': {
+              'someheader': 'someheader'
+            }
+          },
           subject: 'Hello, world!',
           from: ['luong@handsome.rich'],
           to: ['luong@lord.lol'],
@@ -76,7 +104,7 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
           body: '',
-          header: {},
+          custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
@@ -99,7 +127,7 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/html',
           body: '',
-          header: {},
+          custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
@@ -169,7 +197,7 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
           body: '',
-          header: {},
+          custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
@@ -193,7 +221,7 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
           body: '',
-          header: { 'X-Luong' => 'golden', 'X-Hoa' => 'husky' },
+          custom_headers: { 'X-Luong' => 'golden', 'X-Hoa' => 'husky' },
           attachments: []
         }
         mailer.deliver!(mail)
@@ -227,7 +255,7 @@ describe Eh::Mailer::DeliveryMethod do
           mime_type: 'multipart/alternative',
           text_part: 'Luong dep trai.',
           html_part: 'Luong <b>dep trai</b>.',
-          header: {},
+          custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
