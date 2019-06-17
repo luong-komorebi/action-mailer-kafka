@@ -48,34 +48,6 @@ describe Eh::Mailer::DeliveryMethod do
         expect(result.last).to eq(topic)
       end
     end
-
-    context 'when email has custom headers' do
-      before do
-        mail.content_type = 'text/plain'
-        mail.headers('X-SMTPAPI': { 'someheader': 'someheader' }, 'Not start with X header': 'X')
-      end
-
-      it 'deliver message to Kafka' do
-        expected_result = {
-          custom_headers: {
-            'X-SMTPAPI': {
-              'someheader': 'someheader'
-            }
-          },
-          subject: 'Hello, world!',
-          from: ['luong@handsome.rich'],
-          to: ['luong@lord.lol'],
-          cc: ['luong@checkmate.com'],
-          bcc: ['luong@overpower.invincible'],
-          mime_type: 'text/plain',
-          body: '',
-          attachments: []
-        }
-        result = mailer.deliver!(mail)
-        expect(result.first).to include_json(expected_result)
-        expect(result.last).to eq(topic)
-      end
-    end
   end
 
   context 'when mailer use our own initialized kafka instance' do
@@ -208,7 +180,7 @@ describe Eh::Mailer::DeliveryMethod do
 
     context 'when email contains custom headers' do
       before do
-        mail.headers('X-Luong': 'golden', 'X-Hoa': 'husky')
+        mail.headers('X-SMTPAPI': { 'someheader': 'someheader' }, 'Not start with X header': 'X')
         mail.content_type = 'text/plain'
       end
 
@@ -221,7 +193,11 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
           body: '',
-          custom_headers: { 'X-Luong' => 'golden', 'X-Hoa' => 'husky' },
+          custom_headers: {
+            'X-SMTPAPI': {
+              'someheader': 'someheader'
+            }.to_s
+          },
           attachments: []
         }
         mailer.deliver!(mail)

@@ -99,7 +99,12 @@ module Eh
         result = { custom_headers: {} }
         mail.header_fields.each do |h|
           header_name = h.name
-          header_value = h.unparsed_value
+          # header_value = h.unparsed_value
+          # Ideally header values should not be parsed and sent directly to the mail service
+          # However, Field #unparsed_value is not available on Mail Gem version 2.5 and before
+          # here header.value got its value parsed, so a string should be expected
+          # even if you create a custom header with a hash
+          header_value = h.value
           if h.field.is_a?(::Mail::OptionalField) && header_name.start_with?('X-')
             result[:custom_headers][header_name] = header_value
           end
