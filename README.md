@@ -35,7 +35,8 @@ To use the gem, change action mailer's delivery method to `eh_mailer`
 config.action_mailer.delivery_method = :eh_mailer
 ```
 
-The gem accepts 2 kinds of setting params:
+#### Kafa settings
+The gem accepts 2 kinds of kafka setting params:
 
 1. Your Kafka publish proc
 
@@ -97,6 +98,20 @@ Example of smtp as a fallback method:
   }
 ```
 
+#### Service name
+By default, if there is no service name added, the gem will take ENV['APP_NAME'] as the service name. This service name will serve as `author` of an email in mail service. This would help with later categorization and searching. 
+
+```ruby
+config.action_mailer.eh_mailer_settings = {
+  sevice_name: 'local app'
+}
+```
+
+### Custom headers
+
+The gem would only accepts custom headers for emails which follow [RFC822](tools.ietf.org/html/rfc822) (which means that a custom header should begin with 'X-'). Other custom headers would not be parsed and sent to mail-service
+
+
 ## Gem Development
 
 ### Versioning
@@ -122,5 +137,3 @@ To update the version:
   - To run integration tests:
     - First of all, install all dependencies with: ` INTEGRATION_TEST='true' bundle exec appraisal install `
     - To run the unit tests, run ` bundle exec appraisal rspec spec/integrations `
-
-

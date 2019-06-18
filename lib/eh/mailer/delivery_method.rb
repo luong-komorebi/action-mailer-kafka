@@ -2,7 +2,7 @@ module Eh
   module Mailer
     class DeliveryMethod
       SUPPORTED_MULTIPART_MIME_TYPES = ['multipart/alternative', 'multipart/mixed', 'multipart/related'].freeze
-      attr_accessor :message, :settings
+      attr_accessor :settings
       attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc
 
       # settings params allow you to pass in
@@ -40,6 +40,7 @@ module Eh
 
       def initialize(**params)
         @settings = params
+        @service_name = params[:service_name] || ENV['APP_NAME']
         @mailer_topic_name = @settings.fetch(:kafka_mail_topic)
         if @settings[:fallback]
           @fallback_delivery_method = Mail::Configuration.instance.lookup_delivery_method(
@@ -87,7 +88,8 @@ module Eh
           to: mail.to,
           cc: mail.cc,
           bcc: mail.bcc,
-          mime_type: mail.mime_type
+          mime_type: mail.mime_type,
+          author: @service_name
         }
         general_data.merge! construct_mail_body(mail)
         general_data.merge! construct_custom_mail_header(mail)
@@ -96,10 +98,17 @@ module Eh
       end
 
       def construct_custom_mail_header(mail)
-        result = { header: {} }
+        result = { custom_headers: {} }
         mail.header_fields.each do |h|
-          if h.field.is_a?(::Mail::OptionalField)
-            result[:header][h.name] = h.value
+          header_name = h.name
+          # header_value = h.unparsed_value
+          # Ideally header values should not be parsed and sent directly to the mail service
+          # However, Field #unparsed_value is not available on Mail Gem version 2.5 and before
+          # here header.value got its value parsed, so a string should be expected
+          # even if you create a custom header with a hash
+          header_value = h.value
+          if h.field.is_a?(::Mail::OptionalField) && header_name.start_with?('X-')
+            result[:custom_headers][header_name] = header_value
           end
         end
         result
