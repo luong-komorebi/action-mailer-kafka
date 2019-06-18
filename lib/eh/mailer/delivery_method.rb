@@ -3,7 +3,7 @@ module Eh
     class DeliveryMethod
       SUPPORTED_MULTIPART_MIME_TYPES = ['multipart/alternative', 'multipart/mixed', 'multipart/related'].freeze
       attr_accessor :message, :settings
-      attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc
+      attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc, :service_name
 
       # settings params allow you to pass in
       # 1. Your Kafka publish proc
@@ -40,6 +40,7 @@ module Eh
 
       def initialize(**params)
         @settings = params
+        @service_name = params[:service_name] || ENV['APP_NAME']
         @mailer_topic_name = @settings.fetch(:kafka_mail_topic)
         if @settings[:fallback]
           @fallback_delivery_method = Mail::Configuration.instance.lookup_delivery_method(
@@ -87,7 +88,8 @@ module Eh
           to: mail.to,
           cc: mail.cc,
           bcc: mail.bcc,
-          mime_type: mail.mime_type
+          mime_type: mail.mime_type,
+          author: @service_name
         }
         general_data.merge! construct_mail_body(mail)
         general_data.merge! construct_custom_mail_header(mail)

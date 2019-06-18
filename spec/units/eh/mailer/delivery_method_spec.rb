@@ -9,7 +9,10 @@ describe Eh::Mailer::DeliveryMethod do
       cc: 'luong@checkmate.com',
       to: 'luong@lord.lol'
   end
+
   let(:topic) { 'Mail.Mails.Send' }
+
+  before { ENV['APP_NAME'] = 'test' }
 
   context 'when mailer receives insufficient or unnecessary args' do
     let(:mailer) do
@@ -23,7 +26,11 @@ describe Eh::Mailer::DeliveryMethod do
 
   context 'when mailer use a kafka publish method defined by user' do
     let(:mailer) do
-      described_class.new(kafka_publish_proc: proc { |message, topic| [message, topic] }, kafka_mail_topic: topic)
+      described_class.new(
+        kafka_publish_proc: proc { |message, topic| [message, topic] },
+        kafka_mail_topic: topic,
+        service_name: 'test'
+      )
     end
 
     context 'when email is plain text' do
@@ -41,6 +48,7 @@ describe Eh::Mailer::DeliveryMethod do
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
           body: '',
+          author: 'test',
           attachments: []
         }
         result = mailer.deliver!(mail)
@@ -75,6 +83,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
+          author: 'test',
           body: '',
           custom_headers: {},
           attachments: []
@@ -98,6 +107,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/html',
+          author: 'test',
           body: '',
           custom_headers: {},
           attachments: []
@@ -168,6 +178,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
+          author: 'test',
           body: '',
           custom_headers: {},
           attachments: []
@@ -192,6 +203,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
+          author: 'test',
           body: '',
           custom_headers: {
             'X-SMTPAPI': {
@@ -229,6 +241,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'multipart/alternative',
+          author: 'test',
           text_part: 'Luong dep trai.',
           html_part: 'Luong <b>dep trai</b>.',
           custom_headers: {},
