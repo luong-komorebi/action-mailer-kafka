@@ -107,6 +107,11 @@ config.action_mailer.eh_mailer_settings = {
 }
 ```
 
+### Custom headers
+
+The gem would only accepts custom headers for emails which follow [RFC822](tools.ietf.org/html/rfc822) (which means that a custom header should begin with 'X-'). Other custom headers would not be parsed and sent to mail-service
+
+
 ## Gem Development
 
 ### Versioning

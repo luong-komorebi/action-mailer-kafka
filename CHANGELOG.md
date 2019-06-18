@@ -3,6 +3,10 @@
 Changes and additions to the library will be listed here.
 
 ## 1.0.1
+- Make custom header parsing RFC Compliant.
+- Add service_name to settings
+
+## 1.0.0
 - Official release. Remove Kafka producer, take in kafka client info and publishing proc.
 
 ## 0.1.2
