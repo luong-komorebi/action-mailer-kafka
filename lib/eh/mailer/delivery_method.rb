@@ -2,8 +2,8 @@ module Eh
   module Mailer
     class DeliveryMethod
       SUPPORTED_MULTIPART_MIME_TYPES = ['multipart/alternative', 'multipart/mixed', 'multipart/related'].freeze
-      attr_accessor :message, :settings
-      attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc, :service_name
+      attr_accessor :settings
+      attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc
 
       # settings params allow you to pass in
       # 1. Your Kafka publish proc
