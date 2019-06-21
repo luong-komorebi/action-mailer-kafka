@@ -1,8 +1,8 @@
 base_dir = File.absolute_path File.dirname File.dirname __dir__
-gem 'eh-mailer', path: base_dir
+gem 'action_mailer_kafka', path: base_dir
 
-environment 'config.action_mailer.delivery_method = :eh_mailer'
-environment "config.action_mailer.eh_mailer_settings = { \
+environment 'config.action_mailer.delivery_method = :action_mailer_kafka'
+environment "config.action_mailer.action_mailer_kafka_settings = { \
               kafka_mail_topic: 'Mail.Mails.Send',\
               kafka_client_info: { seed_brokers: ['localhost:9092'] } }"
 route "root :to => 'home#index'"

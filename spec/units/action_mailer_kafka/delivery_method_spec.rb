@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Eh::Mailer::DeliveryMethod do
+describe ActionMailerKafka::DeliveryMethod do
   let(:mail) do
     Mail.new \
       from: 'luong@handsome.rich',
@@ -12,15 +12,13 @@ describe Eh::Mailer::DeliveryMethod do
 
   let(:topic) { 'Mail.Mails.Send' }
 
-  before { ENV['APP_NAME'] = 'test' }
-
   context 'when mailer receives insufficient or unnecessary args' do
     let(:mailer) do
       described_class.new(a: 1, b: 2)
     end
 
     it 'raise error' do
-      expect { mailer }.to raise_error(Eh::Mailer::RequiredParamsError)
+      expect { mailer }.to raise_error(ActionMailerKafka::RequiredParamsError)
     end
   end
 
@@ -83,7 +81,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
-          author: 'test',
+          author: '',
           body: '',
           custom_headers: {},
           attachments: []
@@ -107,7 +105,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/html',
-          author: 'test',
+          author: '',
           body: '',
           custom_headers: {},
           attachments: []
@@ -178,7 +176,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
-          author: 'test',
+          author: '',
           body: '',
           custom_headers: {},
           attachments: []
@@ -203,7 +201,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
-          author: 'test',
+          author: '',
           body: '',
           custom_headers: {
             'X-SMTPAPI': {
@@ -241,7 +239,7 @@ describe Eh::Mailer::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'multipart/alternative',
-          author: 'test',
+          author: '',
           text_part: 'Luong dep trai.',
           html_part: 'Luong <b>dep trai</b>.',
           custom_headers: {},

@@ -1,8 +1,12 @@
-# Eh::Mailer
+# ActionMailerKafka
+[![CircleCI](https://circleci.com/gh/luong-komorebi/action-mailer-kafka/tree/master.svg?style=svg)](https://circleci.com/gh/luong-komorebi/action-mailer-kafka/tree/master)
 
-![](./logo.png)
 
-Welcome to Eh-Mailer! This gem is a unified interface to send emails to Kafka and then consumed by mail service. It takes care of the transport layer by defining a delivery method for `action-mailer`. In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/eh/mailer`.
+<p align="center">
+  <img src="./logo.png">
+</p>
+
+This gem is a unified interface to send emails to Kafka message queue. It takes care of the transport layer by defining a delivery method for `action-mailer`. 
 
 To see the gem in action, go to example folder and start the example rails app.
 
@@ -11,7 +15,7 @@ To see the gem in action, go to example folder and start the example rails app.
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'eh-mailer'
+gem 'action_mailer_kafka'
 ```
 
 And then execute:
@@ -20,7 +24,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install eh-mailer
+    $ gem install action_mailer_kafka
 
 ## Usage
 
@@ -28,11 +32,11 @@ Or install it yourself as:
 
 This Gem is tested with Rails version 4. and 5.
 
-To use the gem, change action mailer's delivery method to `eh_mailer`
+To use the gem, change action mailer's delivery method to `action_mailer_kafka`
 
 ```ruby
 # for example, in config/environments/production.rb
-config.action_mailer.delivery_method = :eh_mailer
+config.action_mailer.delivery_method = :action_mailer_kafka
 ```
 
 #### Kafa settings
@@ -44,7 +48,7 @@ The gem accepts 2 kinds of kafka setting params:
 With this option, you should config as below:
 
 ```ruby
-config.action_mailer.eh_mailer_settings = {
+config.action_mailer.action_mailer_kafka_settings = {
   kafka_mail_topic: 'YourKafkaTopic',
   kafka_publish_proc: proc do |message_data, default_message_topic|
                           YourKafkaClientInstance.publish(message_data, default_message_topic)
@@ -60,7 +64,7 @@ and the data would go through your publish process.
 With this option, the library will generate a kafka instance for you:
 
 ```ruby
-config.action_mailer.eh_mailer_settings = {
+config.action_mailer.action_mailer_kafka_settings = {
   kafka_mail_topic: 'YourKafkaTopic',
   kafka_client_info: {
     seed_brokers: ['localhost:9090'],
@@ -80,7 +84,7 @@ Other settings params:
 
 Example of smtp as a fallback method:
 ```ruby
-  config.action_mailer.eh_mailer_settings = {
+  config.action_mailer.action_mailer_kafka_settings = {
     kafka_mail_topic: 'Mail.Mails.Send.Staging',
     kafka_client_info: {
     # .....
@@ -99,30 +103,25 @@ Example of smtp as a fallback method:
 ```
 
 #### Service name
-By default, if there is no service name added, the gem will take ENV['APP_NAME'] as the service name. This service name will serve as `author` of an email in mail service. This would help with later categorization and searching. 
+
+Because the email is sent to Kafka may come from a microservice in your system, an additional field to specify that would be useful. By default, if there is no service name added, the gem will ignore the service name. If provided, the serice name would become a value to the `author` field to the kafka message
 
 ```ruby
-config.action_mailer.eh_mailer_settings = {
+config.action_mailer.action_mailer_kafka_settings = {
   sevice_name: 'local app'
 }
 ```
 
+### Other frameworks
+
+Not tested. But this gem is not tight coupled with Rails. It just needs action-mailer.
+
 ### Custom headers
 
-The gem would only accepts custom headers for emails which follow [RFC822](tools.ietf.org/html/rfc822) (which means that a custom header should begin with 'X-'). Other custom headers would not be parsed and sent to mail-service
+The gem would only accepts custom headers for emails which follow [RFC822](tools.ietf.org/html/rfc822) (which means that a custom header should begin with 'X-'). Other custom headers would not be parsed and sent to Kafka to be consumed.
 
 
 ## Gem Development
-
-### Versioning
-
-The gem has 2 branches `development` and `master`, which are built for deployment. On development branch, a version with the gem ends with `.dev` is built for testing purpose. On master branch, the gem follows semantic versioning like any other gems.
-
-To update the version:
-
-1. Go to `lib/eh/mailer/verision.rb` and bump the version
-2. Also bump the version in `app.json` if on `master`. This is due to historical reasons and some workflows (i.e.: Publish Github Release) are still using it.
-3. Provide changes inside CHANGELOG.
 
 ### Testing
 - To run the test, do ` bundle exec rspec `.

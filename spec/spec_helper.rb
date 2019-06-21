@@ -1,6 +1,6 @@
 require 'byebug'
 require 'bundler/setup'
-require 'eh/mailer'
+require 'action_mailer_kafka'
 require 'rspec/json_expectations'
 
 # Setup coverage report

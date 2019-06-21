@@ -36,4 +36,4 @@ gem 'spring',        group: :development
 # gem 'debugger', group: [:development, :test]
 gem "figaro"
 gem 'delayed_job_active_record'
-gem 'eh-mailer', path: '../'
+gem 'action_mailer_kafka', path: '../'

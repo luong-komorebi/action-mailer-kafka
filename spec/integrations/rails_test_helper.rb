@@ -104,5 +104,5 @@ module RailsTestHelper
       puts "Request with Faraday responds: #{resp.inspect}"
       resp.status.to_s
     end
-end
+  end
 end

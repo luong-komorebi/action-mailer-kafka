@@ -23,8 +23,8 @@ Rails.application.configure do
   # Raise an error on page load if there are pending migrations.
   config.active_record.migration_error = :page_load
 
-  config.action_mailer.delivery_method = :eh_mailer
-  config.action_mailer.eh_mailer_settings = {
+  config.action_mailer.delivery_method = :action_mailer_kafka
+  config.action_mailer.action_mailer_kafka_settings = {
     kafka_mail_topic: 'Mail.Mails.Send.Staging',
     kafka_client_info: {
       seed_brokers: ['localhost:9092'],

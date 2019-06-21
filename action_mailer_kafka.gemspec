@@ -1,17 +1,17 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'eh/mailer/version'
+require 'action_mailer_kafka/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'eh-mailer'
-  spec.version = Eh::Mailer::VERSION
+  spec.name = 'action_mailer_kafka'
+  spec.version = ActionMailerKafka::VERSION
   spec.authors = ['Luong Vo']
   spec.email = ['vo.tran.thanh.luong@gmail.com']
-
-  spec.summary = 'Custom action mailer to use with mail service. INTERNAL USE AT EMPLOYEMENT HERO ONLY.'
+  spec.license = 'MIT'
+  spec.summary = 'Custom action mailer to send mails to Kafka message queue.'
   spec.description = 'This gem defines a way for Rails service or other backends to \
   define a mailer that sends email to our employemt hero mail service.'
-  spec.homepage = 'https://www.employmenthero.com'
+  spec.homepage = 'https://github.com/luong-komorebi/action-mailer-kafka/'
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
