@@ -1,5 +1,5 @@
 # ActionMailerKafka
-[![CircleCI](https://circleci.com/gh/luong-komorebi/action-mailer-kafka/tree/master.svg?style=svg)](https://circleci.com/gh/luong-komorebi/action-mailer-kafka/tree/master)
+[![CircleCI](https://circleci.com/gh/luong-komorebi/action-mailer-kafka/tree/master.svg?style=svg)](https://circleci.com/gh/luong-komorebi/action-mailer-kafka/tree/master) [![Maintainability](https://api.codeclimate.com/v1/badges/4f16e7b6eb2733c52cf4/maintainability)](https://codeclimate.com/github/luong-komorebi/action-mailer-kafka/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/4f16e7b6eb2733c52cf4/test_coverage)](https://codeclimate.com/github/luong-komorebi/action-mailer-kafka/test_coverage)
 
 
 <p align="center">
