@@ -1,4 +1,6 @@
-version: 2
+version: 2.1
+orbs:
+  codecov: codecov/codecov@1.0.2
 jobs:
   rubycritic:
     docker:
@@ -85,13 +87,15 @@ jobs:
               --format progress \
               --color \
               $TEST_FILES
-
       # collect reports
       - store_test_results:
           path: /tmp/test-results
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
+      - codecov/upload:
+          file: /tmp/test-results
+
 
   integration_rails_4:
     docker:
@@ -107,7 +111,6 @@ jobs:
           KAFKA_PORT: 9092
           KAFKA_ZOOKEEPER_CONNECT: localhost:2181
           KAFKA_DELETE_TOPIC_ENABLE: true
-
     working_directory: ~/app
     steps:
       - checkout
@@ -134,7 +137,6 @@ jobs:
           KAFKA_PORT: 9092
           KAFKA_ZOOKEEPER_CONNECT: localhost:2181
           KAFKA_DELETE_TOPIC_ENABLE: true
-
     working_directory: ~/app
     steps:
       - checkout
