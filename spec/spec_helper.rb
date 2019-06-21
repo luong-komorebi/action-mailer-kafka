@@ -8,6 +8,9 @@ require 'simplecov'
 SimpleCov.start if ENV['COVERAGE']
 puts 'SimpleCov started successfully!'
 
+require 'codecov'
+SimpleCov.formatter = SimpleCov::Formatter::Codecov
+
 SimpleCov.at_exit do
   SimpleCov.result.format!
 end
