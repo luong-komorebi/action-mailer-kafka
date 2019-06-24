@@ -61,7 +61,7 @@ module ActionMailerKafka
     end
 
     def logger
-      @settings[:logger] || Logger.new(STDOUT)
+      @logger ||= @settings[:logger] || Logger.new(STDOUT)
     end
 
     def deliver!(mail)
