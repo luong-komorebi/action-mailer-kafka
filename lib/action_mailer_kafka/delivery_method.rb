@@ -34,9 +34,6 @@ module ActionMailerKafka
     #     + fallback_delivery_method
     #     + fallback_delivery_method_settings
     #   }
-    # 3. There is an environment variable: EH_MAILER_FORCE_FALLBACK that forces every mail
-    # delivery to use the fallback method. This environment variable is used to buy
-    # you some time to fix the mail service in case of incidents.
 
     def initialize(**params)
       @settings = params
