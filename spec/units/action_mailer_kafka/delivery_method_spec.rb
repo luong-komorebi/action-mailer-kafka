@@ -10,8 +10,6 @@ describe ActionMailerKafka::DeliveryMethod do
 
   let(:topic) { 'Mail.Mails.Send' }
 
-  before { ENV['APP_NAME'] = 'test' }
-
   context 'when mailer receives insufficient or unnecessary args' do
     let(:mailer) do
       described_class.new(a: 1, b: 2)
@@ -45,7 +43,7 @@ describe ActionMailerKafka::DeliveryMethod do
   context 'when mailer use our own initialized kafka instance' do
     let(:kafka_client_info) { { seed_brokers: ['localhost:9092'] } }
     let(:mailer) do
-      described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic)
+      described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic, service_name: 'test')
     end
     let(:fake_kafka_client) { instance_double(Kafka::Client) }
     let(:fake_kafka) do

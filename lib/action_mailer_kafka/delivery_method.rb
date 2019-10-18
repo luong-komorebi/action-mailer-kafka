@@ -45,7 +45,7 @@ module ActionMailerKafka
       @raise_on_delivery_error = settings[:raise_on_delivery_error]
 
       # General configuration
-      @service_name = settings[:service_name] || ENV['APP_NAME']
+      @service_name = settings[:service_name] || ''
       @mailer_topic_name = settings.fetch(:kafka_mail_topic)
       @kafka_publisher = settings[:kafka_publisher] || ActionMailerKafka::BaseProducer.new(
         logger: @logger, kafka_client_info: settings[:kafka_client_info]

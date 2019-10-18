@@ -41,26 +41,29 @@ config.action_mailer.delivery_method = :action_mailer_kafka
 #### Kafa settings
 The gem accepts 2 kinds of kafka setting params:
 
-1. Your Kafka publish proc
+1. Your Kafka Instance
 
-
+This allows you to configure your own Kafka instance that should inherit from `ActionMailerKafka::BaseProducer`.
 With this option, you should config as below:
 
 ```ruby
+
+class PublisherKlass < ActionMailerKafka::BaseProducer
+# your implementation
+end
+
 config.action_mailer.action_mailer_kafka_settings = {
   kafka_mail_topic: 'YourKafkaTopic',
-  kafka_publish_proc: proc do |message_data, default_message_topic|
-                          YourKafkaClientInstance.publish(message_data, default_message_topic)
-                        end
+  kafka_publisher: PublisherKlass.new
 }
 ```
 
-and the data would go through your publish process.
+and the data would go through your kafka instance.
 
 
 2. Your kafka client info
 
-With this option, the library will generate a kafka instance for you:
+Just pass in your kafka client info and we will take care of the rest. With this option, the library will generate a kafka instance for you. By default this publisher instance is optimised for idempotency and exactly once delivery in Kafka:
 
 ```ruby
 config.action_mailer.action_mailer_kafka_settings = {
