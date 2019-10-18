@@ -1,7 +1,7 @@
 # Changelog
 Changes and additions to the library will be listed here.
 
-## 0.2.0 (DEVELOPING)
+## 1.0.0
 - Dont initialize logger by default anymore.
 - Ensure exaclty once delivery for builtin Kakfa producer.
 - Change the interface of Kafka producer.
