@@ -9,14 +9,8 @@ module ActionMailerKafka
   end
 
   class KafkaOperationError < Error
-    def initialize(msg)
-      super(msg)
-    end
   end
 
   class ParsingOperationError < Error
-    def initialize(msg)
-      super(msg)
-    end
   end
 end
