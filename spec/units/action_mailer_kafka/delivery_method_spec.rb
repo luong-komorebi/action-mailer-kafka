@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 describe ActionMailerKafka::DeliveryMethod do
   let(:mail) do
     Mail.new \
@@ -22,50 +20,41 @@ describe ActionMailerKafka::DeliveryMethod do
     end
   end
 
-  context 'when mailer use a kafka publish method defined by user' do
+  context 'when mailer use a kafka publisher defined by user' do
+    let(:kafka_publisher) {  instance_spy(ActionMailerKafka::BaseProducer) }
     let(:mailer) do
       described_class.new(
-        kafka_publish_proc: proc { |message, topic| [message, topic] },
+        kafka_publisher: kafka_publisher,
         kafka_mail_topic: topic,
         service_name: 'test'
       )
     end
 
-    context 'when email is plain text' do
-      before do
-        mail.content_type = 'text/plain'
-      end
+    before do
+      mail.content_type = 'text/plain'
+    end
 
-      it 'deliver message to Kafka' do
-        expected_result = {
-          custom_headers: {},
-          subject: 'Hello, world!',
-          from: ['luong@handsome.rich'],
-          to: ['luong@lord.lol'],
-          cc: ['luong@checkmate.com'],
-          bcc: ['luong@overpower.invincible'],
-          mime_type: 'text/plain',
-          body: '',
-          author: 'test',
-          attachments: []
-        }
-        result = mailer.deliver!(mail)
-        expect(result.first).to include_json(expected_result)
-        expect(result.last).to eq(topic)
-      end
+    it 'deliver message to Kafka' do
+      mailer.deliver!(mail)
+      expect(kafka_publisher).to have_received(:publish)
     end
   end
 
   context 'when mailer use our own initialized kafka instance' do
     let(:kafka_client_info) { { seed_brokers: ['localhost:9092'] } }
     let(:mailer) do
-      described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic)
+      described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic, service_name: 'test')
     end
-    let(:fake_kafka) { instance_double(Kafka::Client) }
+    let(:fake_kafka_client) { instance_double(Kafka::Client) }
+    let(:fake_kafka) do
+      instance_spy(Kafka::AsyncProducer)
+    end
 
     before do
-      allow(Kafka).to receive(:new).with(kafka_client_info).and_return(fake_kafka)
-      allow(fake_kafka).to receive(:deliver_message).with(kind_of(String), hash_including(:topic))
+      allow(Kafka).to receive(:new).with(kafka_client_info).and_return(fake_kafka_client)
+      allow(fake_kafka_client).to receive(:async_producer).with(
+        hash_including(:idempotent)
+      ).and_return(fake_kafka)
     end
 
     context 'when email is plain text' do
@@ -81,14 +70,16 @@ describe ActionMailerKafka::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
-          author: '',
+          author: 'test',
           body: '',
           custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
         expect(Kafka).to have_received(:new).with(kafka_client_info)
-        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
+        expect(fake_kafka).to have_received(:produce).with(
+          MessagePack.pack(expected_result), hash_including(:topic, :key)
+        )
       end
     end
 
@@ -105,14 +96,14 @@ describe ActionMailerKafka::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/html',
-          author: '',
+          author: 'test',
           body: '',
           custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
         expect(Kafka).to have_received(:new).with(kafka_client_info)
-        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
+        expect(fake_kafka).to have_received(:produce).with(MessagePack.pack(expected_result), hash_including(:topic))
       end
     end
 
@@ -133,17 +124,9 @@ describe ActionMailerKafka::DeliveryMethod do
           described_class.new(kafka_client_info: kafka_client_info, kafka_mail_topic: topic)
         end
 
-        let(:logger_instance) { instance_double(Logger) }
-
-        before do
-          allow(Logger).to receive(:new).and_return(logger_instance)
-          allow(logger_instance).to receive(:error)
-        end
-
         it 'log the error and raise exception' do
           mailer.deliver!(mail)
           expect(faulty_mail_instance).to have_received(:subject).with(any_args)
-          expect(logger_instance).to have_received(:error)
         end
       end
 
@@ -176,14 +159,14 @@ describe ActionMailerKafka::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
-          author: '',
+          author: 'test',
           body: '',
           custom_headers: {},
           attachments: []
         }
         mailer.deliver!(mail)
         expect(Kafka).to have_received(:new).with(kafka_client_info)
-        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
+        expect(fake_kafka).to have_received(:produce).with(MessagePack.pack(expected_result), hash_including(:topic))
       end
     end
 
@@ -201,7 +184,7 @@ describe ActionMailerKafka::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'text/plain',
-          author: '',
+          author: 'test',
           body: '',
           custom_headers: {
             'X-SMTPAPI': {
@@ -212,7 +195,7 @@ describe ActionMailerKafka::DeliveryMethod do
         }
         mailer.deliver!(mail)
         expect(Kafka).to have_received(:new).with(kafka_client_info)
-        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
+        expect(fake_kafka).to have_received(:produce).with(MessagePack.pack(expected_result), hash_including(:topic))
       end
     end
 
@@ -239,7 +222,7 @@ describe ActionMailerKafka::DeliveryMethod do
           cc: ['luong@checkmate.com'],
           bcc: ['luong@overpower.invincible'],
           mime_type: 'multipart/alternative',
-          author: '',
+          author: 'test',
           text_part: 'Luong dep trai.',
           html_part: 'Luong <b>dep trai</b>.',
           custom_headers: {},
@@ -247,13 +230,13 @@ describe ActionMailerKafka::DeliveryMethod do
         }
         mailer.deliver!(mail)
         expect(Kafka).to have_received(:new).with(kafka_client_info)
-        expect(fake_kafka).to have_received(:deliver_message).with(expected_result.to_json, topic: topic)
+        expect(fake_kafka).to have_received(:produce).with(MessagePack.pack(expected_result), hash_including(:topic))
       end
     end
 
     context 'when email raises Kafka exception' do
       before do
-        allow(fake_kafka).to receive(:deliver_message).with(
+        allow(fake_kafka).to receive(:produce).with(
           kind_of(String), hash_including(:topic)
         ).and_raise(Kafka::Error)
       end

@@ -1,25 +1,23 @@
 module ActionMailerKafka
   class DeliveryMethod
     SUPPORTED_MULTIPART_MIME_TYPES = ['multipart/alternative', 'multipart/mixed', 'multipart/related'].freeze
+
     attr_accessor :settings
-    attr_reader :mailer_topic_name, :kafka_client, :kafka_publish_proc
 
     # settings params allow you to pass in
-    # 1. Your Kafka publish proc
-    # With this option, you should config as below:
-    # config.action_mailer.action_mailer_kafka_settings = {
+    # 1. Your Kafka publisher
+    # With this option, you pass an instance of Kafka Publisher, which inherit
+    # from our ActionMailerKafka::BasesProducer or at least support the method
+    # `publish` with the same parameters. After that, your should be as below:
+    # config.action_mailer.eh_mailer_settings = {
     #   kafka_mail_topic: 'YourKafkaTopic',
-    #   kafka_publish_proc: proc do |message_data, default_message_topic|
-    #                           YourKafkaClientInstance.publish(message_data,
-    #                                                           default_message_topic)
-    #                         end
+    #   kafka_publisher: PublisherKlass.new
     # }
-    #
-    # and the data would go through your publish process
+    # and the data would go through your publisher instance
     #
     # 2. Your kafka client info
     # With this option, the library will generate a kafka instance for you:
-    # config.action_mailer.action_mailer_kafka_settings = {
+    # config.action_mailer.eh_mailer_settings = {
     #   kafka_mail_topic: 'YourKafkaTopic',
     #   kafka_client_info: {
     #     seed_brokers: ['localhost:9090'],
@@ -39,48 +37,47 @@ module ActionMailerKafka
 
     def initialize(**params)
       @settings = params
-      @service_name = params[:service_name] || ''
-      @mailer_topic_name = @settings.fetch(:kafka_mail_topic)
-      if @settings[:fallback]
+      # Optional config
+      @logger = settings[:logger]
+      @raise_on_delivery_error = settings[:raise_on_delivery_error]
+
+      # General configuration
+      @service_name = settings[:service_name] || ''
+      @mailer_topic_name = settings.fetch(:kafka_mail_topic)
+      @kafka_publisher = settings[:kafka_publisher] || ActionMailerKafka::BaseProducer.new(
+        logger: @logger, kafka_client_info: settings[:kafka_client_info]
+      )
+
+      # Fallback configuration
+      @fallback = settings[:fallback]
+      if @fallback
         @fallback_delivery_method = Mail::Configuration.instance.lookup_delivery_method(
-          @settings[:fallback].fetch(:fallback_delivery_method)
+          @fallback.fetch(:fallback_delivery_method)
         ).new(
-          @settings[:fallback].fetch(:fallback_delivery_method_settings)
+          @fallback.fetch(:fallback_delivery_method_settings)
         )
       end
-      if @settings[:kafka_publish_proc]
-        @kafka_publish_proc = @settings[:kafka_publish_proc]
-      else
-        @kafka_client = ::Kafka.new(@settings.fetch(:kafka_client_info))
-        @kafka_publish_proc = proc { |data, topic|
-          kafka_client.deliver_message(data, topic: topic)
-        }
-      end
     rescue KeyError => e
-      raise RequiredParamsError.new(params, e.message)
-    end
-
-    def logger
-      @logger ||= @settings[:logger] || Logger.new(STDOUT)
+      raise RequiredParamsError.new(settings, e.message)
     end
 
     def deliver!(mail)
-      mail_data = construct_mail_data mail
-      kafka_publish_proc.call(mail_data, mailer_topic_name)
+      mail_data = construct_mail_as_kafka_message(mail)
+      @kafka_publisher.publish(mail_data, construct_message_key, @mailer_topic_name)
     rescue Kafka::Error => e
       error_msg = "Fail to send email into Kafka due to: #{e.message}. Delivered using fallback method"
-      logger.error(error_msg)
-      @fallback_delivery_method.deliver!(mail) if @settings[:fallback]
-      raise KafkaOperationError, error_msg if @settings[:raise_on_delivery_error]
+      @logger&.error(error_msg)
+      @fallback_delivery_method.deliver!(mail) if @fallback
+      raise KafkaOperationError, error_msg if @raise_on_delivery_error
     rescue StandardError => e
       error_msg = "Fail to send email due to: #{e.message}"
-      logger.error(error_msg)
-      raise ParsingOperationError, error_msg if @settings[:raise_on_delivery_error]
+      @logger&.error(error_msg)
+      raise ParsingOperationError, error_msg if @raise_on_delivery_error
     end
 
     private
 
-    def construct_mail_data(mail)
+    def construct_mail_as_kafka_message(mail)
       general_data = {
         subject: mail.subject,
         from: mail.from,
@@ -93,7 +90,7 @@ module ActionMailerKafka
       general_data.merge! construct_mail_body(mail)
       general_data.merge! construct_custom_mail_header(mail)
       general_data[:attachments] = construct_attachments mail
-      general_data.to_json
+      general_data.to_msgpack
     end
 
     def construct_custom_mail_header(mail)
@@ -134,6 +131,12 @@ module ActionMailerKafka
       else
         { body: mail.body&.decoded }
       end
+    end
+
+    def construct_message_key
+      # shamelessly copy from https://www.rubydoc.info/github/mikel/mail/Mail%2FUtilities:generate_message_id
+      # because some 'mail' version doesn't have this function
+      "<#{Mail.random_tag}@#{::Socket.gethostname}.mail>"
     end
   end
 end
